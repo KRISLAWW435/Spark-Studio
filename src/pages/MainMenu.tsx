@@ -16,47 +16,10 @@ import {
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
 import { sound } from '../utils/soundManager';
+import { SPARK_MENU_PHRASES } from '../data/sparkMenuPhrases';
+import { sparkVoice } from '../utils/sparkVoicePlayer';
 
 const MENU_BG = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/backgrounds/menu-converted.webp';
-
-const SPARK_MESSAGES = [
-  'Заходи скорее — пора создавать новый дизайн!',
-  'Ты знал? Персонажей для Roblox придумывают дизайнеры-художники 🎨',
-  'Здесь ты научишься делать крутые штуки своими руками.',
-  'Факт: логотип Apple нарисовали за 2 недели, а он — самый узнаваемый в мире.',
-  'Не забывай: даже самый крутой дизайнер когда-то был новичком.',
-  'Что если сегодня ты создашь свой первый логотип?',
-  'Ошибся? Отлично! Дизайнеры учатся на ошибках.',
-  'У Roblox 200+ миллионов игроков. И каждого зацепил чей-то дизайн.',
-  'Идеи приходят, когда ты не боишься экспериментировать.',
-  'Знаешь? Первый эмодзи создал дизайнер по имени Сигэтака Курита.',
-  'Каждый раз, когда ты выбираешь цвет — ты уже дизайнер.',
-  'Не бойся странных идей. Именно так рождаются бренды.',
-];
-
-/**
- * Подбор лучшего женского русского голоса
- * Приоритет: Google русский -> Milena -> Alena -> первый доступный ru-RU
- */
-function getRussianFemaleVoice(): SpeechSynthesisVoice | null {
-  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return null;
-  const voices = window.speechSynthesis.getVoices();
-  const ruVoices = voices.filter(
-    (v) => v.lang.startsWith('ru') || v.lang === 'ru-RU' || v.lang.toLowerCase().includes('rus')
-  );
-  if (ruVoices.length === 0) return null;
-
-  const google = ruVoices.find((v) => v.name.toLowerCase().includes('google'));
-  if (google) return google;
-  const milena = ruVoices.find((v) => v.name.toLowerCase().includes('milena'));
-  if (milena) return milena;
-  const alena = ruVoices.find(
-    (v) => v.name.toLowerCase().includes('alena') || v.name.toLowerCase().includes('алёна')
-  );
-  if (alena) return alena;
-
-  return ruVoices[0];
-}
 
 export function MainMenu() {
   const navigate = useNavigate();
@@ -69,13 +32,7 @@ export function MainMenu() {
   } = usePlayer();
 
   const [messageIndex, setMessageIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('spark_voice_muted');
-      return saved !== null ? saved === 'true' : false;
-    }
-    return false;
-  });
+  const [isMuted, setIsMuted] = useState<boolean>(() => sparkVoice.isMuted());
 
   const [isFullscreen, setIsFullscreen] = useState<boolean>(() => {
     if (typeof document !== 'undefined') {
@@ -138,15 +95,6 @@ export function MainMenu() {
     }
   }, [tryEnterFullscreen]);
 
-  // Загрузка доступных голосов Web Speech API
-  useEffect(() => {
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.onvoiceschanged = () => {
-        // Voices refreshed
-      };
-    }
-  }, []);
-
   // Функция планирования следующего сообщения
   const scheduleNextMessage = useCallback((delayMs: number) => {
     clearNextTimer();
@@ -155,89 +103,55 @@ export function MainMenu() {
     }, delayMs);
   }, [clearNextTimer]);
 
-  // Озвучивание текста текущего сообщения
-  const speakCurrentMessage = useCallback((text: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+  // Воспроизведение фразы через SparkVoicePlayer
+  const playCurrentPhrase = useCallback((index: number) => {
+    if (isMutedRef.current) {
       scheduleNextMessage(9000);
       return;
     }
 
-    try {
-      const cleanText = text
-        .replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '')
-        .trim();
+    const phrase = SPARK_MENU_PHRASES[index];
+    if (!phrase) return;
 
-      if (!cleanText) {
-        scheduleNextMessage(9000);
-        return;
+    sparkVoice.play(phrase.id, () => {
+      // После окончания аудио ждем 3 секунды и переключаем на следующее
+      if (!isMutedRef.current) {
+        scheduleNextMessage(3000);
       }
-
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      utterance.lang = 'ru-RU';
-      utterance.pitch = 1.15;
-      utterance.rate = 1.0;
-
-      const voice = getRussianFemaleVoice();
-      if (voice) {
-        utterance.voice = voice;
-      }
-
-      utterance.onend = () => {
-        // После окончания озвучки ждем 3 секунды и переключаем сообщение
-        if (!isMutedRef.current) {
-          scheduleNextMessage(3000);
-        }
-      };
-
-      utterance.onerror = (e) => {
-        console.warn('Speech synthesis error/interrupted:', e);
-        if (!isMutedRef.current) {
-          scheduleNextMessage(9000);
-        }
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      console.warn('TTS speak error:', err);
-      scheduleNextMessage(9000);
-    }
+    });
   }, [scheduleNextMessage]);
 
   // Смена сообщения на следующее без повторений
   const goToNextMessage = useCallback(() => {
     clearNextTimer();
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    sparkVoice.stop();
 
     let next: number;
     const current = messageIndexRef.current;
     do {
-      next = Math.floor(Math.random() * SPARK_MESSAGES.length);
-    } while (next === current && SPARK_MESSAGES.length > 1);
+      next = Math.floor(Math.random() * SPARK_MENU_PHRASES.length);
+    } while (next === current && SPARK_MENU_PHRASES.length > 1);
 
     setMessageIndex(next);
 
     if (!isMutedRef.current) {
-      speakCurrentMessage(SPARK_MESSAGES[next]);
+      playCurrentPhrase(next);
     } else {
       scheduleNextMessage(9000);
     }
-  }, [clearNextTimer, speakCurrentMessage, scheduleNextMessage]);
+  }, [clearNextTimer, playCurrentPhrase, scheduleNextMessage]);
 
-  // Запуск первого сообщения при монтировании
+  // Запуск первой фразы при монтировании
   useEffect(() => {
     clearNextTimer();
     if (!isMuted) {
       const timer = setTimeout(() => {
-        speakCurrentMessage(SPARK_MESSAGES[0]);
+        playCurrentPhrase(0);
       }, 600);
       return () => {
         clearTimeout(timer);
         clearNextTimer();
-        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-          window.speechSynthesis.cancel();
-        }
+        sparkVoice.stop();
       };
     } else {
       scheduleNextMessage(9000);
@@ -245,15 +159,13 @@ export function MainMenu() {
         clearNextTimer();
       };
     }
-  }, [isMuted, speakCurrentMessage, scheduleNextMessage, clearNextTimer]);
+  }, [isMuted, playCurrentPhrase, scheduleNextMessage, clearNextTimer]);
 
   // Очистка при размонтировании
   useEffect(() => {
     return () => {
       clearNextTimer();
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      sparkVoice.stop();
     };
   }, [clearNextTimer]);
 
@@ -263,19 +175,14 @@ export function MainMenu() {
     sound.playClick();
     const newMuted = !isMuted;
     setIsMuted(newMuted);
-    localStorage.setItem('spark_voice_muted', String(newMuted));
+    sparkVoice.setMuted(newMuted);
 
     clearNextTimer();
     if (newMuted) {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
+      sparkVoice.stop();
       scheduleNextMessage(9000);
     } else {
-      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-      }
-      speakCurrentMessage(SPARK_MESSAGES[messageIndex]);
+      playCurrentPhrase(messageIndex);
     }
   };
 
@@ -328,9 +235,7 @@ export function MainMenu() {
   const handleNewStudio = () => {
     tryEnterFullscreen();
     sound.playClick();
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    sparkVoice.stop();
     startNewGame();
     navigate('/intro');
   };
@@ -339,9 +244,7 @@ export function MainMenu() {
   const handleContinue = () => {
     tryEnterFullscreen();
     sound.playClick();
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
+    sparkVoice.stop();
     navigate('/map');
   };
 
@@ -353,7 +256,7 @@ export function MainMenu() {
       onClick={tryEnterFullscreen}
       className="relative w-screen h-screen overflow-hidden select-none bg-slate-900"
     >
-      {/* 1. ФОН: Без наложений и затемнений, логотип уже встроен в фоновое изображение */}
+      {/* 1. ФОН: Без наложений и затемнений */}
       <div
         className="absolute inset-0 bg-cover bg-center"
         style={{ backgroundImage: `url(${MENU_BG})` }}
@@ -434,7 +337,7 @@ export function MainMenu() {
                 transition={{ duration: 0.4 }}
                 className="text-slate-800 text-base sm:text-lg font-medium leading-relaxed"
               >
-                {SPARK_MESSAGES[messageIndex]}
+                {SPARK_MENU_PHRASES[messageIndex]?.text}
               </motion.p>
             </AnimatePresence>
           </div>
