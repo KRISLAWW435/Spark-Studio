@@ -1,6 +1,6 @@
 // src/App.tsx
 import React from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router';
+import { HashRouter, Routes, Route, Navigate } from 'react-router';
 import { PlayerProvider } from './context/PlayerContext';
 import { AppLayout } from './components/layout/AppLayout';
 import { WorldMap } from './components/map/WorldMap';
@@ -17,7 +17,7 @@ import { SubtitlesBar } from './components/ui/SubtitlesBar';
 export default function App() {
   return (
     <PlayerProvider>
-      <BrowserRouter>
+      <HashRouter>
         <SubtitlesBar />
         <Routes>
           {/* Стартовый экран Splash Screen */}
@@ -47,8 +47,11 @@ export default function App() {
           <Route element={<AppLayout />}>
             <Route path="/map" element={<WorldMap />} />
           </Route>
+
+          {/* Fallback на главный экран */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-      </BrowserRouter>
+      </HashRouter>
     </PlayerProvider>
   );
 }
