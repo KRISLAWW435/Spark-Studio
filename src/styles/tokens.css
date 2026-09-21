@@ -1,0 +1,27 @@
+/* src/styles/tokens.css */
+:root {
+  /* Небо и вода */
+  --color-sky: #58C9F3;
+  --color-sky-deep: #36B3E8;
+  --color-sky-horizon: #8AE0FD;
+  --color-sea-wave: #3AAFE3;
+
+  /* Основные оттенки текста и фона */
+  --color-navy: #17345F;
+  --color-ink: #233C5F;
+  --color-cream: #FFF9EA;
+  --color-white: #FFFFFF;
+
+  /* Острова */
+  --color-orange: #FF9F2F;      /* Мари */
+  --color-orange-dark: #E96820;
+  --color-yellow: #FFD85C;
+  --color-teal: #53D7D3;        /* Кирилл */
+  --color-teal-dark: #27B2AD;
+  --color-purple: #9361E8;      /* Соня */
+  --color-purple-dark: #7442CC;
+  --color-green: #63CA73;
+  --color-green-dark: #43A953;
+  --color-blue: #3E8BFF;        /* Мегаполис */
+  --color-blue-dark: #1F6AE5;
+}

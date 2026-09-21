@@ -1,0 +1,15 @@
+/* src/styles/global.css */
+@import "./tokens.css";
+
+/* Casual Game Global Utilities */
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--color-sky, #58C9F3);
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}

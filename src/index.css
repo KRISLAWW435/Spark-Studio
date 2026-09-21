@@ -1,0 +1,132 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import "./styles/tokens.css";
+@import "tailwindcss";
+
+:root {
+  /* Light Theme Variables */
+  --bg-primary: #F8FAFC;
+  --text-primary: #0F172A;
+  --text-secondary: #64748B;
+  
+  --accent-rainbow: linear-gradient(135deg, #FF9A8B 0%, #FF6A88 20%, #FFD166 40%, #06D6A0 60%, #118AB2 80%, #9D4EDD 100%);
+  --accent-rainbow-subtle: linear-gradient(135deg, rgba(255, 154, 139, 0.15), rgba(255, 209, 102, 0.15), rgba(6, 214, 160, 0.15), rgba(17, 138, 178, 0.15), rgba(157, 78, 221, 0.15));
+  --accent-rainbow-border: linear-gradient(135deg, rgba(255, 106, 136, 0.5), rgba(255, 209, 102, 0.5), rgba(6, 214, 160, 0.5), rgba(17, 138, 178, 0.5), rgba(157, 78, 221, 0.5));
+
+  --card-glass-bg: rgba(255, 255, 255, 0.95);
+  --card-glass-border: #E2E8F0;
+  --neon-glow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+@theme {
+  --color-bg-app: var(--bg-primary);
+  --color-bg-surface: var(--card-glass-bg);
+  
+  /* Google Palette */
+  --color-google-blue: #4285F4;
+  --color-google-red: #EA4335;
+  --color-google-yellow: #FBBC05;
+  --color-google-green: #34A853;
+  
+  --color-accent-blue: var(--color-google-blue);
+  --color-accent-green: var(--color-google-green);
+  
+  --color-text-main: var(--text-primary);
+  --color-text-muted: var(--text-secondary);
+  
+  --color-border-soft: rgba(66, 133, 244, 0.2);
+  
+  --shadow-ios-soft: 0 8px 32px rgba(66, 133, 244, 0.08);
+  --shadow-ios-card: 0 4px 12px rgba(0, 0, 0, 0.05), 0 16px 40px rgba(66, 133, 244, 0.1);
+  
+  --radius-ios-sm: 8px;
+  --radius-ios-md: 12px;
+  --radius-ios-lg: 16px;
+  --radius-ios-xl: 24px;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Nunito', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+/* Rainbow Text Utility */
+.text-rainbow {
+  background: var(--accent-rainbow);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Rainbow Background Utility */
+.bg-rainbow {
+  background: var(--accent-rainbow);
+}
+
+.bg-rainbow-subtle {
+  background: var(--accent-rainbow-subtle);
+}
+
+/* Neon glow box shadow utility */
+.shadow-neon {
+  box-shadow: var(--neon-glow);
+}
+
+/* Custom Rainbow Border Gradient Container */
+.border-gradient-rainbow {
+  position: relative;
+  border-radius: inherit;
+}
+.border-gradient-rainbow::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--accent-rainbow-border);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Glassmorphism utility for surface backgrounds */
+.bg-bg-surface {
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+h1, h2, h3, h4, h5, h6, .heading {
+  letter-spacing: -0.02em;
+  font-weight: 700;
+}
+
+@keyframes rainbow-shift {
+  0% { filter: hue-rotate(0deg); }
+  100% { filter: hue-rotate(360deg); }
+}
+
+.animate-rainbow-shift {
+  animation: rainbow-shift 8s linear infinite;
+}
+
+@keyframes blink {
+  0%, 96%, 98% { transform: scaleY(1); }
+  97% { transform: scaleY(0.1); }
+}
+
+/* Accessibility: prefers-reduced-motion support */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

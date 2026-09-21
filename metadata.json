@@ -1,0 +1,8 @@
+{
+  "name": "UI/UX Mentor Toolkit",
+  "description": "Обучающая 2D casual игра по UI/UX дизайну: Архипелаг UX • Карта мира с интерактивными островами, маскотом Спарком и заданиями.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
