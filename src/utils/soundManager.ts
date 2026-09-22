@@ -2,7 +2,7 @@
 import { getAudioUrl } from './audioUrl';
 
 class SoundManager {
-  private ctx: AudioContext | null = null;
+  public ctx: AudioContext | null = null;
   private currentMusicAudio: HTMLAudioElement | null = null;
   private currentTrackId: string | null = null;
 
@@ -36,7 +36,7 @@ class SoundManager {
   /**
    * Разблокировка и инициализация AudioContext
    */
-  public initCtx() {
+  public async initCtx(): Promise<void> {
     if (typeof window === 'undefined') return;
 
     if (!this.ctx) {
@@ -47,7 +47,11 @@ class SoundManager {
     }
 
     if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {});
+      try {
+        await this.ctx.resume();
+      } catch (e) {
+        console.warn('[SoundManager] initCtx resume error:', e);
+      }
     }
 
     // Если фоновая музыка была поставлена на паузу браузером — возобновляем

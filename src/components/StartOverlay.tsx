@@ -38,11 +38,35 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
   }, [phase]);
 
   // Запуск сценария ТОЛЬКО при нажатии на магическую 3D-кнопку
-  const handleStart = () => {
+  const handleStart = async () => {
     if (phase !== 'idle') return;
 
-    // 1. Нажатие (в контексте прямого жеста пользователя разблокируем звук и запускаем музыку)
-    soundManager.initCtx();
+    // 1. Разблокировать AudioContext
+    await soundManager.initCtx();
+
+    // 2. Форсировать resume (для Chrome / Safari)
+    if (soundManager.ctx && soundManager.ctx.state === 'suspended') {
+      try {
+        await soundManager.ctx.resume();
+      } catch (e) {
+        console.warn('AudioContext resume failed:', e);
+      }
+    }
+
+    // 3. Воспроизвести пустой звук для «активации» контекста
+    if (soundManager.ctx) {
+      try {
+        const buffer = soundManager.ctx.createBuffer(1, 1, 22050);
+        const source = soundManager.ctx.createBufferSource();
+        source.buffer = buffer;
+        source.connect(soundManager.ctx.destination);
+        source.start(0);
+      } catch (e) {
+        console.warn('Silent buffer activation failed:', e);
+      }
+    }
+
+    // 4. Запустить звуки и фоновую музыку
     soundManager.playClick();
     soundManager.playCelebration();
     soundManager.playMusic('loading_loop');
