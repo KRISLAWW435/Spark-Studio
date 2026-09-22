@@ -21,43 +21,44 @@ export default function App() {
 
   return (
     <PlayerProvider>
-      {/* Волшебный стартовый экран «Магия творчества» */}
-      {!isStarted && <StartOverlay onStart={() => setIsStarted(true)} />}
-
       <HashRouter>
         <SubtitlesBar />
-        <Routes>
-          {/* Стартовый экран Splash Screen */}
-          <Route path="/" element={<SplashScreen />} />
-          <Route path="/splash" element={<SplashScreen />} />
+        {!isStarted ? (
+          <StartOverlay onStart={() => setIsStarted(true)} />
+        ) : (
+          <Routes>
+            {/* Стартовый экран Splash Screen */}
+            <Route path="/" element={<SplashScreen />} />
+            <Route path="/splash" element={<SplashScreen />} />
 
-          {/* Экран загрузки с анимированной шкалой-краской */}
-          <Route path="/loading" element={<LoadingScreen />} />
+            {/* Экран загрузки с анимированной шкалой-краской */}
+            <Route path="/loading" element={<LoadingScreen />} />
 
-          {/* Главное меню игры (Спринт 1) */}
-          <Route path="/menu" element={<MainMenu />} />
+            {/* Главное меню игры (Спринт 1) */}
+            <Route path="/menu" element={<MainMenu />} />
 
-          {/* Заставка «Рождение Спарка» */}
-          <Route path="/intro" element={<SparkBirth />} />
-          <Route path="/intro/slides" element={<Intro />} />
+            {/* Заставка «Рождение Спарка» */}
+            <Route path="/intro" element={<SparkBirth />} />
+            <Route path="/intro/slides" element={<Intro />} />
 
-          {/* Создание студии (Спринт 3) */}
-          <Route path="/studio" element={<StudioSetup />} />
+            {/* Создание студии (Спринт 3) */}
+            <Route path="/studio" element={<StudioSetup />} />
 
-          {/* Практика: Интерактив кнопки */}
-          <Route path="/practice" element={<Practice />} />
+            {/* Практика: Интерактив кнопки */}
+            <Route path="/practice" element={<Practice />} />
 
-          {/* Финальный экран с получением ключа .spark */}
-          <Route path="/final" element={<Final />} />
+            {/* Финальный экран с получением ключа .spark */}
+            <Route path="/final" element={<Final />} />
 
-          {/* Основной игровой лейаут: Карта мира Архипелаг UX */}
-          <Route element={<AppLayout />}>
-            <Route path="/map" element={<WorldMap />} />
-          </Route>
+            {/* Основной игровой лейаут: Карта мира Архипелаг UX */}
+            <Route element={<AppLayout />}>
+              <Route path="/map" element={<WorldMap />} />
+            </Route>
 
-          {/* Fallback на главный экран */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Fallback на главный экран */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        )}
       </HashRouter>
     </PlayerProvider>
   );

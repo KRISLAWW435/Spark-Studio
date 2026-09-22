@@ -1,5 +1,5 @@
 // src/pages/SplashScreen.tsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundManager } from '../utils/soundManager';
@@ -12,46 +12,32 @@ export function SplashScreen() {
   const [isExiting, setIsExiting] = useState(false);
   const [sparkError, setSparkError] = useState(false);
   const [logoError, setLogoError] = useState(false);
+  const hasNavigatedRef = useRef(false);
+
+  // Переход на экран загрузки /loading (никогда не на /menu!)
+  const proceedToLoading = useCallback(() => {
+    if (hasNavigatedRef.current) return;
+    hasNavigatedRef.current = true;
+    setIsExiting(true);
+
+    setTimeout(() => {
+      navigate('/loading', { replace: true });
+    }, 400);
+  }, [navigate]);
 
   useEffect(() => {
-    let timer: NodeJS.Timeout | null = null;
-    let navTimer: NodeJS.Timeout | null = null;
+    // Гарантируем запуск фоновой музыки loading_loop
+    soundManager.playMusic('loading_loop');
 
-    const startSplashFlow = () => {
-      // Запускаем фоновую музыку (loading_loop)
-      soundManager.playMusic('loading_loop');
-
-      // 4.5 сек показ + 0.5 сек fade out = 5.0 сек итого
-      timer = setTimeout(() => {
-        setIsExiting(true);
-        navTimer = setTimeout(() => {
-          navigate('/loading', { replace: true });
-        }, 500);
-      }, 4500);
-    };
-
-    const isAlreadyUnlocked = (window as unknown as { __sparkAudioUnlocked?: boolean }).__sparkAudioUnlocked;
-
-    if (isAlreadyUnlocked) {
-      startSplashFlow();
-    } else {
-      const handleUnlocked = () => {
-        (window as unknown as { __sparkAudioUnlocked?: boolean }).__sparkAudioUnlocked = true;
-        startSplashFlow();
-      };
-      window.addEventListener('audio-unlocked', handleUnlocked, { once: true });
-      return () => {
-        window.removeEventListener('audio-unlocked', handleUnlocked);
-        if (timer) clearTimeout(timer);
-        if (navTimer) clearTimeout(navTimer);
-      };
-    }
+    // 4.5 сек показ + 0.4 сек fade out -> строго на /loading
+    const timer = setTimeout(() => {
+      proceedToLoading();
+    }, 4500);
 
     return () => {
-      if (timer) clearTimeout(timer);
-      if (navTimer) clearTimeout(navTimer);
+      clearTimeout(timer);
     };
-  }, [navigate]);
+  }, [proceedToLoading]);
 
   return (
     <AnimatePresence>
@@ -59,12 +45,14 @@ export function SplashScreen() {
         key="splash-screen"
         initial={{ opacity: 1 }}
         animate={{ opacity: isExiting ? 0 : 1 }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-        className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center select-none"
+        transition={{ duration: 0.4, ease: 'easeInOut' }}
+        onClick={proceedToLoading}
+        title="Нажмите для перехода к загрузке"
+        className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center select-none cursor-pointer"
       >
         {/* ================= ФОН: 3 СЛОЯ ================= */}
         <div className="absolute inset-0 z-0 pointer-events-none">
-          {/* Слой 1: базовый градиент (больше пастельно-голубого) */}
+          {/* Слой 1: базовый градиент */}
           <div
             className="absolute inset-0"
             style={{
@@ -72,7 +60,7 @@ export function SplashScreen() {
             }}
           />
 
-          {/* Слой 2: розовые пятна — уменьшены и приглушены */}
+          {/* Слой 2: розовые пятна */}
           <div
             className="absolute"
             style={{
@@ -98,7 +86,7 @@ export function SplashScreen() {
             }}
           />
 
-          {/* Слой 3: белое свечение в центре — усилено */}
+          {/* Слой 3: белое свечение в центре */}
           <motion.div
             className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
             style={{
@@ -119,7 +107,7 @@ export function SplashScreen() {
           transition={{ duration: 0.7, ease: 'easeOut', delay: 0.2 }}
           className="relative z-10 flex flex-col items-center justify-center px-4"
         >
-          {/* Персонаж — увеличен (750px на desktop, 500px на tablet, 350px на mobile) */}
+          {/* Персонаж */}
           {!sparkError ? (
             <motion.img
               src={SPARK_URL}
@@ -134,7 +122,6 @@ export function SplashScreen() {
               className="w-[350px] md:w-[500px] xl:w-[750px] max-w-[90vw] max-h-[60vh] h-auto object-contain drop-shadow-sm"
             />
           ) : (
-            /* Fallback если сеть недоступна */
             <motion.div
               animate={{ y: [0, -6, 0] }}
               transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
@@ -145,7 +132,7 @@ export function SplashScreen() {
             </motion.div>
           )}
 
-          {/* Логотип — 480px на desktop, поднят выше (mt-2, отступ 8px) */}
+          {/* Логотип */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -160,7 +147,6 @@ export function SplashScreen() {
                 className="w-[280px] md:w-[380px] xl:w-[480px] max-w-[75vw] h-auto object-contain drop-shadow-xs"
               />
             ) : (
-              /* Fallback логотипа */
               <div className="text-center px-5 py-2 bg-white/80 rounded-2xl border border-purple-200 shadow-sm">
                 <span className="text-2xl md:text-3xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 bg-clip-text text-transparent">
                   SPARK STUDIO

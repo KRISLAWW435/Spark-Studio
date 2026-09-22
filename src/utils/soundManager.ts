@@ -1,4 +1,5 @@
 // src/utils/soundManager.ts
+import { getAudioUrl } from './audioUrl';
 
 class SoundManager {
   private ctx: AudioContext | null = null;
@@ -18,9 +19,13 @@ class SoundManager {
         localStorage.setItem('music_muted', 'false');
       }
       if (localStorage.getItem('voice_muted') === null) {
-        // Поддержка существующего флага spark_voice_muted
-        const existingSparkMuted = localStorage.getItem('spark_voice_muted') === 'true';
-        localStorage.setItem('voice_muted', String(existingSparkMuted));
+        localStorage.setItem('voice_muted', 'false');
+      }
+      if (localStorage.getItem('spark_voice_muted') === null) {
+        localStorage.setItem('spark_voice_muted', 'false');
+      }
+      if (localStorage.getItem('sound_muted') === null) {
+        localStorage.setItem('sound_muted', 'false');
       }
 
       // Глобальный обработчик разблокировки звука при первом клике/касании
@@ -94,11 +99,7 @@ class SoundManager {
     this.stopMusic();
     this.currentTrackId = trackId;
 
-    const baseUrl = import.meta.env.BASE_URL.endsWith('/')
-      ? import.meta.env.BASE_URL
-      : `${import.meta.env.BASE_URL}/`;
-
-    const musicUrl = `${baseUrl}audio/music/${trackId}.mp3`;
+    const musicUrl = getAudioUrl(`audio/music/${trackId}.mp3`);
     const audio = new Audio(musicUrl);
     audio.loop = true;
     audio.volume = this.isMusicMuted() ? 0 : this.getMusicVolume();
@@ -353,7 +354,8 @@ class SoundManager {
   }
 
   isSoundMuted(): boolean {
-    return this.isMusicMuted();
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('sound_muted') === 'true';
   }
 }
 

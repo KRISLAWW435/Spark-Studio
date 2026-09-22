@@ -4,9 +4,12 @@ import { motion } from 'motion/react';
 
 export interface PointingHandProps {
   visible: boolean;
+  size?: number;
 }
 
-export function PointingHand({ visible }: PointingHandProps) {
+export function PointingHand({ visible, size = 64 }: PointingHandProps) {
+  const isCompact = size <= 48;
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.85 }}
@@ -15,8 +18,8 @@ export function PointingHand({ visible }: PointingHandProps) {
           ? {
               opacity: 1,
               scale: 1,
-              x: [0, 4, 0],
-              y: [0, 6, 0],
+              x: [0, 3, 0],
+              y: [0, 5, 0],
             }
           : { opacity: 0, scale: 0.8, pointerEvents: 'none' }
       }
@@ -32,15 +35,15 @@ export function PointingHand({ visible }: PointingHandProps) {
       className="absolute pointer-events-none z-40 select-none"
       style={{
         // Палец указывает прямо на правый нижний край магического шара
-        right: '18px',
-        bottom: '18px',
+        right: isCompact ? '4px' : '18px',
+        bottom: isCompact ? '4px' : '18px',
         willChange: 'transform, opacity',
       }}
     >
       {/* Качественный классический курсор-указатель (палец) точно как на референсе */}
       <svg
-        width="66"
-        height="74"
+        width={size}
+        height={Math.round((size * 74) / 66)}
         viewBox="0 0 66 74"
         fill="none"
         xmlns="http://www.w3.org/2000/svg"

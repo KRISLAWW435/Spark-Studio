@@ -1,5 +1,5 @@
 // src/components/StartOverlay.tsx
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundManager } from '../utils/soundManager';
 import {
@@ -7,6 +7,7 @@ import {
   ParticleBurst,
   IdleParticles,
 } from './effects';
+import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 interface StartOverlayProps {
   onStart: () => void;
@@ -17,25 +18,13 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
   const [phase, setPhase] = useState<'idle' | 'press' | 'burst' | 'transition'>('idle');
   const [isHovered, setIsHovered] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
-  const [buttonSize, setButtonSize] = useState(220);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const updateSize = () => {
-        const w = window.innerWidth;
-        if (w < 640) {
-          setButtonSize(180);
-        } else if (w < 1024) {
-          setButtonSize(205);
-        } else {
-          setButtonSize(230);
-        }
-      };
-      updateSize();
-      window.addEventListener('resize', updateSize);
-      return () => window.removeEventListener('resize', updateSize);
-    }
-  }, []);
+  const layout = useResponsiveLayout();
+  const isMobile = layout === 'mobile';
+
+  // Размеры для экрана: mobile < 768px vs desktop/tablet
+  const buttonSize = isMobile ? 120 : 200;
+  const sparklesSize = isMobile ? 50 : 90;
 
   const handleHoverStart = useCallback(() => {
     if (phase !== 'idle') return;
@@ -52,28 +41,25 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
   const handleStart = () => {
     if (phase !== 'idle') return;
 
-    // 1. Нажатие (0.0–0.14 сек): легкое сжатие, разблокировка звука
+    // 1. Нажатие (в контексте прямого жеста пользователя разблокируем звук и запускаем музыку)
     soundManager.initCtx();
     soundManager.playClick();
+    soundManager.playCelebration();
+    soundManager.playMusic('loading_loop');
     setPhase('press');
 
     // 2. Взрыв (0.14–0.55 сек): Вспышка звезды и выплеск краски
     setTimeout(() => {
       setShowFlash(true);
-      soundManager.playCelebration();
       setPhase('burst');
     }, 140);
 
     // 3. Плавный переход в приложение (0.55–0.9 сек)
     setTimeout(() => {
-      soundManager.playMusic('loading_loop');
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(new Event('audio-unlocked'));
-      }
       setPhase('transition');
     }, 550);
 
-    // 4. Завершение оверлея
+    // 4. Завершение оверлея и переход к SplashScreen
     setTimeout(() => {
       onStart();
     }, 900);
@@ -86,7 +72,7 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
         initial={{ opacity: 1 }}
         animate={{ opacity: phase === 'transition' ? 0 : 1 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
-        className="fixed inset-0 z-[100] flex flex-col items-center justify-center select-none overflow-hidden p-6 cursor-default"
+        className="fixed inset-0 z-[100] flex flex-col items-center justify-center select-none overflow-hidden p-4 sm:p-6 cursor-default"
         style={{
           // Чистый пастельный фон как на референсе
           background: 'linear-gradient(145deg, #EEF2FF 0%, #F5F3FF 45%, #FDF2F8 100%)',
@@ -109,8 +95,8 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
 
         {/* ================= ЦЕНТРАЛЬНАЯ СЦЕНА С 3D-ШАРОМ ================= */}
         <div className="relative z-10 flex flex-col items-center justify-center text-center">
-          {/* Область шара с парящими искрами */}
-          <div className="relative flex items-center justify-center w-[290px] h-[290px] sm:w-[350px] sm:h-[350px]">
+          {/* Область шара с парящими искрами и рукой */}
+          <div className="relative flex items-center justify-center w-[160px] h-[160px] md:w-[320px] md:h-[320px]">
             {/* 1. Парящие золотые звезды, мазки краски и бусины вокруг шара */}
             {phase === 'idle' && (
               <IdleParticles buttonRadius={buttonSize / 2} isHovered={isHovered} />
@@ -128,11 +114,12 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
                 onHoverEnd={handleHoverEnd}
                 onClick={handleStart}
                 size={buttonSize}
+                sparklesSize={sparklesSize}
               />
             )}
           </div>
 
-          {/* ================= ТАБЛИЧКА «НАЖМИ, ЧТОБЫ НАЧАТЬ ТВОРИТЬ» (НЕ КЛИКАБЕЛЬНА) ================= */}
+          {/* ================= БЕЛАЯ ПЛАШКА ПОД КНОПКОЙ (слой z-20 поверх частиц) ================= */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
             animate={{
@@ -140,10 +127,15 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
               y: phase === 'idle' ? 0 : 15,
             }}
             transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="mt-8 sm:mt-12 pointer-events-none select-none"
+            className="relative z-20 mt-4 md:mt-12 pointer-events-none select-none max-w-[260px] md:max-w-md w-full mx-auto"
           >
-            <div className="px-8 py-3.5 rounded-2xl bg-[#EDE9FE]/90 border border-[#DDD6FE]/80 text-[#4338CA] font-extrabold text-sm sm:text-base tracking-wider shadow-none">
-              Нажми, чтобы начать творить
+            <div className="px-4 py-3 md:px-8 md:py-6 rounded-2xl md:rounded-3xl bg-white/95 backdrop-blur-md border border-white/80 shadow-[0_10px_30px_rgba(67,56,202,0.12)] text-center">
+              <h1 className="text-lg md:text-3xl font-black text-slate-800 tracking-tight whitespace-nowrap">
+                Нажми, чтобы начать
+              </h1>
+              <p className="text-xs md:text-base text-slate-500 font-medium mt-0.5 md:mt-1 whitespace-nowrap">
+                Магия творчества
+              </p>
             </div>
           </motion.div>
         </div>

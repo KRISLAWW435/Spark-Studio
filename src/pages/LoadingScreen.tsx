@@ -1,10 +1,13 @@
 // src/pages/LoadingScreen.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundManager } from '../utils/soundManager';
 
 const LOADING_BG = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/backgrounds/Loading%20Screen.webp';
+
+// Минимальное время показа экрана загрузки — 3.5 секунды (между 3 и 4 секундами)
+const MIN_LOADING_TIME = 3500;
 
 const LOADING_MESSAGES = [
   'Подготовка творческого пространства…',
@@ -14,127 +17,201 @@ const LOADING_MESSAGES = [
   'Почти готово…',
 ];
 
-const PRELOAD_ASSETS = [
-  'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/spark/spark_splash.webp',
+// Критичные ассеты для реальной предзагрузки в память браузера
+const ASSETS_TO_PRELOAD = [
+  // Фоны
+  `${import.meta.env.BASE_URL}assets/backgrounds/menu-bg-clean.webp`,
+  'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/backgrounds/Loading%20Screen.webp',
+  // Логотип
   'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/logo/logo-converted.webp',
-  LOADING_BG,
+  `${import.meta.env.BASE_URL}assets/logo/logo-converted.webp`,
+  // Спарк (эмоции и состояния)
+  `${import.meta.env.BASE_URL}assets/spark/spark_idle.webp`,
+  `${import.meta.env.BASE_URL}assets/spark/spark_happy.webp`,
+  `${import.meta.env.BASE_URL}assets/spark/spark_thinking.webp`,
+  // Музыка главного меню
+  `${import.meta.env.BASE_URL}audio/music/menu_bg.mp3`,
+  // Голосовые реплики Спарка для главного меню (12 треков)
+  `${import.meta.env.BASE_URL}audio/spark/menu_01.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_02.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_03.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_04.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_05.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_06.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_07.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_08.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_09.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_10.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_11.mp3`,
+  `${import.meta.env.BASE_URL}audio/spark/menu_12.mp3`,
 ];
 
 export function LoadingScreen() {
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
   const [messageIndex, setMessageIndex] = useState(0);
+  const [allLoaded, setAllLoaded] = useState(false);
   const [isExiting, setIsExiting] = useState(false);
+  const startTimeRef = useRef<number>(Date.now());
+  const actualLoadedCountRef = useRef<number>(0);
 
+  // 1. Реальная предзагрузка ассетов в фоне
   useEffect(() => {
-    // Если трек loading_loop уже играет (продолжение со Splash) — не перезапускаем, иначе запускаем
+    startTimeRef.current = Date.now();
     soundManager.playMusic('loading_loop');
 
-    // Неблокирующая предзагрузка ресурсов в фоне
-    const preloadAssets = async () => {
-      try {
-        const imagePromises = PRELOAD_ASSETS.map(
-          (src) =>
-            new Promise<void>((resolve) => {
-              const img = new Image();
-              img.onload = () => resolve();
-              img.onerror = () => resolve(); // не блокируем при ошибке сети
-              img.src = src;
-            })
-        );
-        const fontPromise = document.fonts ? document.fonts.ready : Promise.resolve();
-        await Promise.all([...imagePromises, fontPromise]);
-      } catch {
-        // Фоновая предзагрузка завершается тихо
+    let completed = false;
+    const total = ASSETS_TO_PRELOAD.length;
+
+    const checkItemLoaded = () => {
+      actualLoadedCountRef.current++;
+      if (actualLoadedCountRef.current >= total && !completed) {
+        completed = true;
+        setAllLoaded(true);
       }
     };
-    preloadAssets();
 
-    // Прогресс ровно за 5 секунд (0 -> 100%)
-    const start = Date.now();
-    const duration = 5000;
-    const interval = setInterval(() => {
-      const elapsed = Date.now() - start;
-      const p = Math.min(100, Math.round((elapsed / duration) * 100));
-      setProgress(p);
-    }, 50);
+    // Запуск предзагрузки изображений и аудио
+    ASSETS_TO_PRELOAD.forEach((url) => {
+      if (url.endsWith('.mp3')) {
+        const audio = new Audio();
+        audio.onloadeddata = checkItemLoaded;
+        audio.onerror = checkItemLoaded; // защита: не блокировать при ошибке
+        audio.src = url;
+      } else {
+        const img = new Image();
+        img.onload = checkItemLoaded;
+        img.onerror = checkItemLoaded; // защита: не блокировать при ошибке
+        img.src = url;
+      }
+    });
 
-    // Смена сообщений каждую 1 секунду (0-1с, 1-2с, 2-3с, 3-4с, 4-5с)
+    // Смена текстовых сообщений
     const msgInterval = setInterval(() => {
       setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
-    }, 1000);
+    }, 1100);
 
-    // Переход строго через 5 секунд + 0.5с fade out музыки и экрана
-    const timer = setTimeout(() => {
-      setIsExiting(true);
-      soundManager.fadeOutMusic(500);
-      setTimeout(() => {
-        navigate('/menu', { replace: true });
-      }, 500);
-    }, duration);
+    // Защита от вечной загрузки: максимум 10 секунд
+    const maxTimer = setTimeout(() => {
+      console.warn('Preload timeout — переход без полной загрузки');
+      completed = true;
+      setAllLoaded(true);
+    }, 10000);
 
     return () => {
-      clearInterval(interval);
       clearInterval(msgInterval);
-      clearTimeout(timer);
+      clearTimeout(maxTimer);
     };
-  }, [navigate]);
+  }, []);
+
+  // 2. Плавный прогресс шкалы с гарантией показа 3-4 секунды (даже при быстром кэше)
+  useEffect(() => {
+    const progressInterval = setInterval(() => {
+      const elapsed = Date.now() - startTimeRef.current;
+      const total = ASSETS_TO_PRELOAD.length;
+      const fileProgress = Math.round((actualLoadedCountRef.current / total) * 100);
+      const timeRatio = Math.min(1, elapsed / MIN_LOADING_TIME);
+      const timeProgress = Math.round(timeRatio * 100);
+
+      // Прогресс плавно увеличивается в течение 3.5 секунд, отражая реальную загрузку
+      let currentVal: number;
+      if (allLoaded) {
+        // Если ассеты уже загружены, шкала плавно добегает до 100% за время MIN_LOADING_TIME
+        currentVal = Math.max(timeProgress, progress);
+        if (elapsed >= MIN_LOADING_TIME) {
+          currentVal = 100;
+        }
+      } else {
+        // Пока файлы грузятся, процент ограничен минимумом из времени и файлов
+        currentVal = Math.min(95, Math.max(progress, Math.min(fileProgress, timeProgress)));
+      }
+
+      setProgress(Math.min(100, Math.max(progress, currentVal)));
+    }, 40);
+
+    return () => clearInterval(progressInterval);
+  }, [allLoaded, progress]);
+
+  // 3. Выход из экрана после истечения 3-4 секунд И завершения загрузки
+  useEffect(() => {
+    if (!allLoaded) return;
+
+    const elapsed = Date.now() - startTimeRef.current;
+    const delay = Math.max(0, MIN_LOADING_TIME - elapsed);
+
+    const timer = setTimeout(() => {
+      setProgress(100);
+      setIsExiting(true);
+      soundManager.fadeOutMusic(400);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [allLoaded]);
+
+  // 4. Переход на Главное Меню во время белой вспышки
+  useEffect(() => {
+    if (!isExiting) return;
+    const navTimer = setTimeout(() => {
+      navigate('/menu', { replace: true });
+    }, 350);
+    return () => clearTimeout(navTimer);
+  }, [isExiting, navigate]);
 
   return (
-    <AnimatePresence>
+    <div className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-end select-none bg-[#EEF2FF]">
+      {/* Белая вспышка поверх всего при переходе в меню (полное исключение чёрного экрана) */}
       <motion.div
-        key="loading-screen"
+        className="fixed inset-0 z-50 bg-white pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: isExiting ? 1 : 0 }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
+      />
+
+      {/* Фоновое изображение экрана загрузки */}
+      <motion.div
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ backgroundImage: `url(${LOADING_BG})` }}
         initial={{ opacity: 1 }}
-        animate={{ opacity: isExiting ? 0 : 1 }}
-        transition={{ duration: 0.5, ease: 'easeInOut' }}
-        className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-end select-none"
-      >
-        {/* Фоновое изображение */}
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${LOADING_BG})` }}
-        />
+        animate={{ opacity: isExiting ? 0.8 : 1 }}
+        transition={{ duration: 0.3 }}
+      />
 
-        {/* Затемнение/градиент внизу для читаемости текста и полосы */}
-        <div className="absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/40 via-black/15 to-transparent pointer-events-none" />
-
-        {/* Контент внизу: текст, прогресс-бар, проценты */}
-        <div className="relative z-10 w-full max-w-[90vw] sm:max-w-[450px] lg:max-w-[600px] px-4 sm:px-8 pb-12 sm:pb-16 flex flex-col items-center gap-3 sm:gap-4">
-          {/* Сменяющийся текст над шкалой */}
-          <div className="h-8 flex items-center justify-center text-center">
-            <AnimatePresence mode="wait">
-              <motion.p
-                key={messageIndex}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -5 }}
-                transition={{ duration: 0.3 }}
-                className="text-white text-base sm:text-lg md:text-xl font-bold drop-shadow-md text-center"
-              >
-                {LOADING_MESSAGES[messageIndex]}
-              </motion.p>
-            </AnimatePresence>
-          </div>
-
-          {/* Горизонтальный органический прогресс-бар */}
-          <div className="w-full h-3 sm:h-3.5 bg-white/30 backdrop-blur-xs rounded-full overflow-hidden relative shadow-inner p-[1px]">
-            <motion.div
-              className="h-full rounded-full"
-              style={{
-                width: `${progress}%`,
-                background: 'linear-gradient(90deg, #FFD54F 0%, #FF9600 40%, #FF6B9D 70%, #A855F7 100%)',
-              }}
-              transition={{ duration: 0.1, ease: 'linear' }}
-            />
-          </div>
-
-          {/* Проценты под шкалой */}
-          <span className="text-white/90 text-sm sm:text-base font-semibold tracking-wider drop-shadow-sm">
-            {progress}%
-          </span>
+      {/* Контент внизу: текст, шкала прогресса, проценты (на мобильном опущен ниже через pb-4) */}
+      <div className="relative z-10 w-full max-w-[90vw] sm:max-w-[450px] lg:max-w-[600px] px-4 sm:px-8 pb-4 md:pb-12 lg:pb-16 flex flex-col items-center gap-2 md:gap-3 lg:gap-4">
+        {/* Сменяющийся текст над шкалой (#17345F, font-bold) */}
+        <div className="h-7 sm:h-8 flex items-center justify-center text-center">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={messageIndex}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.3 }}
+              className="text-[#17345F] text-sm md:text-base lg:text-lg font-bold text-center"
+            >
+              {LOADING_MESSAGES[messageIndex]}
+            </motion.p>
+          </AnimatePresence>
         </div>
-      </motion.div>
-    </AnimatePresence>
+
+        {/* Светлый прогресс-бар с реальным процентом предзагрузки */}
+        <div className="w-full h-3 sm:h-3.5 bg-white/60 backdrop-blur-sm border border-white/40 rounded-full overflow-hidden relative shadow-sm p-[1px]">
+          <motion.div
+            className="h-full rounded-full"
+            style={{
+              width: `${progress}%`,
+              background: 'linear-gradient(90deg, #A855F7 0%, #22D3EE 100%)',
+            }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+          />
+        </div>
+
+        {/* Проценты под шкалой (#A855F7, font-semibold) */}
+        <span className="text-[#A855F7] text-xs md:text-sm font-semibold tracking-wider">
+          {progress}%
+        </span>
+      </div>
+    </div>
   );
 }
 

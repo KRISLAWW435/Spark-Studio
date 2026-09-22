@@ -9,6 +9,7 @@ export interface MagicButtonProps {
   onHoverEnd: () => void;
   onClick: () => void;
   size?: number;
+  sparklesSize?: number;
 }
 
 export function MagicButton({
@@ -18,10 +19,11 @@ export function MagicButton({
   onHoverEnd,
   onClick,
   size = 220,
+  sparklesSize = 90,
 }: MagicButtonProps) {
   return (
     <motion.div
-      className="relative flex items-center justify-center cursor-pointer select-none outline-none z-20"
+      className="relative flex items-center justify-center cursor-pointer select-none outline-none z-[15]"
       style={{
         width: size,
         height: size,
@@ -239,7 +241,7 @@ export function MagicButton({
         />
 
         {/* 11. ЦЕНТРАЛЬНАЯ ЧИСТО БЕЛАЯ ЗВЕЗДА (БЕЗ ЖЕЛТОЙ ОБВОДКИ) */}
-        <g transform="translate(100, 100)">
+        <g transform={`translate(100, 100) scale(${sparklesSize / 90})`}>
           {/* Мягкий чисто белый ореол */}
           <circle r="44" fill="url(#starWhiteAura)" />
 

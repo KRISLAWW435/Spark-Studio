@@ -1,5 +1,6 @@
 // src/utils/sparkVoicePlayer.ts
 import { soundManager } from './soundManager';
+import { getAudioUrl } from './audioUrl';
 
 class SparkVoicePlayer {
   private currentAudio: HTMLAudioElement | null = null;
@@ -17,12 +18,8 @@ class SparkVoicePlayer {
       return;
     }
 
-    // Формируем путь с учетом базового URL (GitHub Pages / Spark-Studio / локально)
-    const baseUrl = import.meta.env.BASE_URL.endsWith('/')
-      ? import.meta.env.BASE_URL
-      : `${import.meta.env.BASE_URL}/`;
-
-    const audioUrl = `${baseUrl}audio/spark/${phraseId}.mp3`;
+    // Формируем надежный абсолютный путь к аудио
+    const audioUrl = getAudioUrl(`audio/spark/${phraseId}.mp3`);
     const audio = new Audio(audioUrl);
     audio.volume = soundManager.getVoiceVolume();
     this.currentAudio = audio;
