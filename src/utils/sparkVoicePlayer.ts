@@ -1,4 +1,5 @@
 // src/utils/sparkVoicePlayer.ts
+import { soundManager } from './soundManager';
 
 class SparkVoicePlayer {
   private currentAudio: HTMLAudioElement | null = null;
@@ -11,8 +12,8 @@ class SparkVoicePlayer {
   play(phraseId: string, onEnd?: () => void) {
     this.stop();
 
-    // Проверяем флаг Mute
-    if (this.isMuted()) {
+    // Проверяем флаг Mute из soundManager
+    if (soundManager.isVoiceMuted()) {
       return;
     }
 
@@ -23,6 +24,7 @@ class SparkVoicePlayer {
 
     const audioUrl = `${baseUrl}audio/spark/${phraseId}.mp3`;
     const audio = new Audio(audioUrl);
+    audio.volume = soundManager.getVoiceVolume();
     this.currentAudio = audio;
 
     audio.onended = () => {
@@ -54,20 +56,17 @@ class SparkVoicePlayer {
   }
 
   /**
-   * Проверяет, выключен ли звук
+   * Проверяет, выключен ли голос
    */
   isMuted(): boolean {
-    if (typeof window === 'undefined') return false;
-    return localStorage.getItem('spark_voice_muted') === 'true';
+    return soundManager.isVoiceMuted();
   }
 
   /**
    * Устанавливает статус Mute
    */
   setMuted(muted: boolean) {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('spark_voice_muted', String(muted));
-    }
+    soundManager.setVoiceMuted(muted);
     if (muted) {
       this.stop();
     }

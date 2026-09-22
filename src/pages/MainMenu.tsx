@@ -11,13 +11,15 @@ import {
   VolumeX,
   Maximize2,
   Minimize2,
+  Settings,
   CheckCircle2,
   AlertCircle,
 } from 'lucide-react';
 import { usePlayer } from '../context/PlayerContext';
-import { sound } from '../utils/soundManager';
+import { sound, soundManager } from '../utils/soundManager';
 import { SPARK_MENU_PHRASES } from '../data/sparkMenuPhrases';
 import { sparkVoice } from '../utils/sparkVoicePlayer';
+import { SettingsModal } from '../components/SettingsModal';
 
 const MENU_BG = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/backgrounds/menu-converted.webp';
 
@@ -32,7 +34,8 @@ export function MainMenu() {
   } = usePlayer();
 
   const [messageIndex, setMessageIndex] = useState(0);
-  const [isMuted, setIsMuted] = useState<boolean>(() => sparkVoice.isMuted());
+  const [isMuted, setIsMuted] = useState<boolean>(() => soundManager.isVoiceMuted());
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const [isFullscreen, setIsFullscreen] = useState<boolean>(() => {
     if (typeof document !== 'undefined') {
@@ -87,13 +90,30 @@ export function MainMenu() {
     };
   }, []);
 
-  // 2. Автофуллскрин при первом входе
+  // 2. Автофуллскрин при первом входе + запуск фоновой музыки
   useEffect(() => {
     if (!hasAttemptedFullscreenRef.current) {
       hasAttemptedFullscreenRef.current = true;
       tryEnterFullscreen();
     }
+    // Запуск фоновой музыки (играет зацикленно)
+    soundManager.playMusic('menu_bg');
   }, [tryEnterFullscreen]);
+
+  // Слушатель изменения Mute голоса из модалки настроек
+  useEffect(() => {
+    const handleVoiceMuteChange = () => {
+      setIsMuted(soundManager.isVoiceMuted());
+    };
+
+    window.addEventListener('voice-muted-change', handleVoiceMuteChange);
+    window.addEventListener('spark-sound-toggle', handleVoiceMuteChange);
+
+    return () => {
+      window.removeEventListener('voice-muted-change', handleVoiceMuteChange);
+      window.removeEventListener('spark-sound-toggle', handleVoiceMuteChange);
+    };
+  }, []);
 
   // Функция планирования следующего сообщения
   const scheduleNextMessage = useCallback((delayMs: number) => {
@@ -175,7 +195,7 @@ export function MainMenu() {
     sound.playClick();
     const newMuted = !isMuted;
     setIsMuted(newMuted);
-    sparkVoice.setMuted(newMuted);
+    soundManager.setVoiceMuted(newMuted);
 
     clearNextTimer();
     if (newMuted) {
@@ -190,6 +210,8 @@ export function MainMenu() {
   const handleBubbleClick = () => {
     tryEnterFullscreen();
     sound.playClick();
+    // Если музыка еще не запустилась из-за политик браузера, пробуем снова
+    soundManager.playMusic('menu_bg');
     goToNextMessage();
   };
 
@@ -262,24 +284,46 @@ export function MainMenu() {
         style={{ backgroundImage: `url(${MENU_BG})` }}
       />
 
-      {/* 2. ЯРКАЯ FULLSCREEN КНОПКА: В правом верхнем углу (48×48px, градиент, тень) */}
-      <motion.button
-        whileHover={{ scale: 1.05, filter: 'brightness(1.1)' }}
-        whileTap={{ scale: 0.95 }}
-        onClick={(e) => {
-          e.stopPropagation();
-          sound.playClick();
-          toggleFullscreen();
-        }}
-        title={isFullscreen ? 'Выйти из полноэкранного режима' : 'Полноэкранный режим'}
-        className="absolute top-5 right-5 z-30 w-12 h-12 rounded-full flex items-center justify-center text-white cursor-pointer transition-all active:scale-95"
-        style={{
-          background: 'linear-gradient(135deg, #A855F7 0%, #22D3EE 100%)',
-          boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4)',
-        }}
-      >
-        {isFullscreen ? <Minimize2 size={20} className="text-white" /> : <Maximize2 size={20} className="text-white" />}
-      </motion.button>
+      {/* 2. ВЕРХНИЕ ПРАВЫЕ КНОПКИ (Настройки и Fullscreen) */}
+      <div className="absolute top-5 right-5 z-30 flex items-center gap-3">
+        {/* Кнопка настроек */}
+        <motion.button
+          whileHover={{ scale: 1.05, filter: 'brightness(1.1)' }}
+          whileTap={{ scale: 0.95 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            sound.playClick();
+            setIsSettingsOpen(true);
+          }}
+          title="Настройки звука"
+          className="w-12 h-12 rounded-full flex items-center justify-center text-white cursor-pointer transition-all active:scale-95"
+          style={{
+            background: 'linear-gradient(135deg, #A855F7 0%, #22D3EE 100%)',
+            boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4)',
+          }}
+        >
+          <Settings size={20} className="text-white" />
+        </motion.button>
+
+        {/* Кнопка Fullscreen */}
+        <motion.button
+          whileHover={{ scale: 1.05, filter: 'brightness(1.1)' }}
+          whileTap={{ scale: 0.95 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            sound.playClick();
+            toggleFullscreen();
+          }}
+          title={isFullscreen ? 'Выйти из полноэкранного режима' : 'Полноэкранный режим'}
+          className="w-12 h-12 rounded-full flex items-center justify-center text-white cursor-pointer transition-all active:scale-95"
+          style={{
+            background: 'linear-gradient(135deg, #A855F7 0%, #22D3EE 100%)',
+            boxShadow: '0 4px 12px rgba(168, 85, 247, 0.4)',
+          }}
+        >
+          {isFullscreen ? <Minimize2 size={20} className="text-white" /> : <Maximize2 size={20} className="text-white" />}
+        </motion.button>
+      </div>
 
       {/* Скрытый инпут для ключа студии */}
       <input
@@ -368,7 +412,7 @@ export function MainMenu() {
             whileHover={{ scale: 1.02, filter: 'brightness(1.1)' }}
             whileTap={{ scale: 0.98 }}
             onClick={handleContinue}
-            className="w-full max-w-[450px] h-[64px] sm:h-[72px] rounded-full flex items-center justify-between px-6 sm:px-8 text-white shadow-[0_10px_25px_rgba(168,85,247,0.35)] transition-all"
+            className="w-full max-w-[450px] h-[64px] sm:h-[72px] rounded-full flex items-center justify-between px-6 sm:px-8 text-white shadow-[0_10px_25px_rgba(168,85,247,0.35)] transition-all cursor-pointer"
             style={{
               background: 'linear-gradient(90deg, #A855F7 0%, #C084FC 50%, #22D3EE 100%)',
             }}
@@ -392,7 +436,7 @@ export function MainMenu() {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={handleNewStudio}
-          className="w-full max-w-[400px] h-[56px] sm:h-[64px] rounded-full flex items-center justify-center gap-3 border-2 border-[#A855F7] text-[#A855F7] bg-white/5 backdrop-blur-xs hover:bg-[#A855F7]/10 transition-colors shadow-sm"
+          className="w-full max-w-[400px] h-[56px] sm:h-[64px] rounded-full flex items-center justify-center gap-3 border-2 border-[#A855F7] text-[#A855F7] bg-white/5 backdrop-blur-xs hover:bg-[#A855F7]/10 transition-colors shadow-sm cursor-pointer"
         >
           <Plus size={22} className="text-[#A855F7] stroke-[2.5]" />
           <span className="text-lg sm:text-xl font-bold">Новая студия</span>
@@ -408,7 +452,7 @@ export function MainMenu() {
               tryEnterFullscreen();
               fileInputRef.current?.click();
             }}
-            className="w-full max-w-[360px] h-[48px] sm:h-[52px] rounded-full flex items-center justify-center gap-2.5 border border-[#A855F7]/40 text-[#A855F7] bg-white/5 backdrop-blur-xs text-sm sm:text-base font-medium hover:bg-[#A855F7]/8 transition-colors"
+            className="w-full max-w-[360px] h-[48px] sm:h-[52px] rounded-full flex items-center justify-center gap-2.5 border border-[#A855F7]/40 text-[#A855F7] bg-white/5 backdrop-blur-xs text-sm sm:text-base font-medium hover:bg-[#A855F7]/8 transition-colors cursor-pointer"
           >
             <Key size={18} className="text-[#A855F7]" />
             <span>Загрузить ключ от студии</span>
@@ -418,6 +462,12 @@ export function MainMenu() {
           </p>
         </div>
       </div>
+
+      {/* МОДАЛКА НАСТРОЕК ЗВУКА */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
     </div>
   );
 }

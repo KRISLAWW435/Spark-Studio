@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
+import { soundManager } from '../utils/soundManager';
 
 const LOADING_BG = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/backgrounds/Loading%20Screen.webp';
 
@@ -26,6 +27,9 @@ export function LoadingScreen() {
   const [isExiting, setIsExiting] = useState(false);
 
   useEffect(() => {
+    // Если трек loading_loop уже играет (продолжение со Splash) — не перезапускаем, иначе запускаем
+    soundManager.playMusic('loading_loop');
+
     // Неблокирующая предзагрузка ресурсов в фоне
     const preloadAssets = async () => {
       try {
@@ -60,9 +64,10 @@ export function LoadingScreen() {
       setMessageIndex((prev) => (prev + 1) % LOADING_MESSAGES.length);
     }, 1000);
 
-    // Переход строго через 5 секунд + 0.5с fade out
+    // Переход строго через 5 секунд + 0.5с fade out музыки и экрана
     const timer = setTimeout(() => {
       setIsExiting(true);
+      soundManager.fadeOutMusic(500);
       setTimeout(() => {
         navigate('/menu', { replace: true });
       }, 500);

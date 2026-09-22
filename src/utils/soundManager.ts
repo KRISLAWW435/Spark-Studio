@@ -1,34 +1,214 @@
 // src/utils/soundManager.ts
+
 class SoundManager {
   private ctx: AudioContext | null = null;
-  private isMuted = false;
+  private currentMusicAudio: HTMLAudioElement | null = null;
+  private currentTrackId: string | null = null;
 
-  private init() {
-    if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      this.ctx = new AudioCtx();
+  constructor() {
+    // Инициализация дефолтных значений в localStorage при первом запуске
+    if (typeof window !== 'undefined') {
+      if (localStorage.getItem('music_volume') === null) {
+        localStorage.setItem('music_volume', '0.4');
+      }
+      if (localStorage.getItem('voice_volume') === null) {
+        localStorage.setItem('voice_volume', '0.8');
+      }
+      if (localStorage.getItem('music_muted') === null) {
+        localStorage.setItem('music_muted', 'false');
+      }
+      if (localStorage.getItem('voice_muted') === null) {
+        // Поддержка существующего флага spark_voice_muted
+        const existingSparkMuted = localStorage.getItem('spark_voice_muted') === 'true';
+        localStorage.setItem('voice_muted', String(existingSparkMuted));
+      }
     }
-    if (this.ctx.state === 'suspended') {
-      this.ctx.resume();
+  }
+
+  private initCtx() {
+    if (!this.ctx && typeof window !== 'undefined') {
+      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioCtx) {
+        this.ctx = new AudioCtx();
+      }
+    }
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().catch(() => {});
+    }
+  }
+
+  // --- ФОНОВАЯ МУЗЫКА ---
+
+  /**
+   * Запускает фоновую музыку зациклено
+   * @param trackId Имя файла без расширения (например, 'menu_bg')
+   */
+  playMusic(trackId: string) {
+    if (typeof window === 'undefined') return;
+
+    // Если этот же трек уже играет — не перезапускаем
+    if (this.currentMusicAudio && this.currentTrackId === trackId && !this.currentMusicAudio.paused) {
+      return;
+    }
+
+    this.stopMusic();
+    this.currentTrackId = trackId;
+
+    const baseUrl = import.meta.env.BASE_URL.endsWith('/')
+      ? import.meta.env.BASE_URL
+      : `${import.meta.env.BASE_URL}/`;
+
+    const musicUrl = `${baseUrl}audio/music/${trackId}.mp3`;
+    const audio = new Audio(musicUrl);
+    audio.loop = true;
+    audio.volume = this.isMusicMuted() ? 0 : this.getMusicVolume();
+    this.currentMusicAudio = audio;
+
+    audio.play().catch((err) => {
+      // Игнорируем ошибку автоплея браузера до первого пользовательского взаимодействия
+      console.warn('[SoundManager] Автовоспроизведение музыки ожидает взаимодействия:', err);
+    });
+  }
+
+  /**
+   * Возвращает ID текущего трека
+   */
+  getCurrentTrackId(): string | null {
+    return this.currentTrackId;
+  }
+
+  /**
+   * Останавливает фоновую музыку
+   */
+  stopMusic() {
+    if (this.currentMusicAudio) {
+      this.currentMusicAudio.pause();
+      this.currentMusicAudio.currentTime = 0;
+      this.currentMusicAudio = null;
+      this.currentTrackId = null;
+    }
+  }
+
+  /**
+   * Плавно уменьшает громкость музыки до 0 за указанное время и останавливает трек
+   * @param duration Длительность затухания в миллисекундах (по умолчанию 500мс)
+   */
+  fadeOutMusic(duration = 500): Promise<void> {
+    return new Promise((resolve) => {
+      const audio = this.currentMusicAudio;
+      if (!audio || audio.paused || this.isMusicMuted()) {
+        this.stopMusic();
+        resolve();
+        return;
+      }
+
+      const startVolume = audio.volume;
+      const startTime = performance.now();
+      const stepInterval = 20;
+
+      const fadeInterval = setInterval(() => {
+        const elapsed = performance.now() - startTime;
+        const progress = Math.min(1, elapsed / duration);
+        const newVolume = Math.max(0, startVolume * (1 - progress));
+
+        if (this.currentMusicAudio === audio) {
+          audio.volume = newVolume;
+        }
+
+        if (progress >= 1) {
+          clearInterval(fadeInterval);
+          if (this.currentMusicAudio === audio) {
+            this.stopMusic();
+          }
+          resolve();
+        }
+      }, stepInterval);
+    });
+  }
+
+  // --- УПРАВЛЕНИЕ ГРОМКОСТЬЮ И MUTE ---
+
+  getMusicVolume(): number {
+    if (typeof window === 'undefined') return 0.4;
+    const v = localStorage.getItem('music_volume');
+    return v !== null ? parseFloat(v) : 0.4;
+  }
+
+  setMusicVolume(v: number) {
+    const clamped = Math.max(0, Math.min(1, v));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('music_volume', clamped.toFixed(2));
+      window.dispatchEvent(new CustomEvent('music-volume-change', { detail: { volume: clamped } }));
+    }
+    if (this.currentMusicAudio) {
+      this.currentMusicAudio.volume = this.isMusicMuted() ? 0 : clamped;
+    }
+  }
+
+  getVoiceVolume(): number {
+    if (typeof window === 'undefined') return 0.8;
+    const v = localStorage.getItem('voice_volume');
+    return v !== null ? parseFloat(v) : 0.8;
+  }
+
+  setVoiceVolume(v: number) {
+    const clamped = Math.max(0, Math.min(1, v));
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('voice_volume', clamped.toFixed(2));
+      window.dispatchEvent(new CustomEvent('voice-volume-change', { detail: { volume: clamped } }));
+    }
+  }
+
+  isMusicMuted(): boolean {
+    if (typeof window === 'undefined') return false;
+    return localStorage.getItem('music_muted') === 'true';
+  }
+
+  setMusicMuted(muted: boolean) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('music_muted', String(muted));
+      window.dispatchEvent(new CustomEvent('music-muted-change', { detail: { muted } }));
+    }
+    if (this.currentMusicAudio) {
+      this.currentMusicAudio.volume = muted ? 0 : this.getMusicVolume();
+      if (!muted && this.currentMusicAudio.paused) {
+        this.currentMusicAudio.play().catch(() => {});
+      }
+    }
+  }
+
+  isVoiceMuted(): boolean {
+    if (typeof window === 'undefined') return false;
+    return (
+      localStorage.getItem('voice_muted') === 'true' ||
+      localStorage.getItem('spark_voice_muted') === 'true'
+    );
+  }
+
+  setVoiceMuted(muted: boolean) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('voice_muted', String(muted));
+      localStorage.setItem('spark_voice_muted', String(muted));
+      window.dispatchEvent(new CustomEvent('voice-muted-change', { detail: { muted } }));
+      window.dispatchEvent(new CustomEvent('spark-sound-toggle', { detail: { muted } }));
     }
   }
 
   setMuted(muted: boolean) {
-    this.isMuted = muted;
-    localStorage.setItem('sound_muted', String(muted));
-    window.dispatchEvent(new Event('sound-muted-change'));
-    window.dispatchEvent(new CustomEvent('spark-sound-toggle', { detail: { muted } }));
+    this.setMusicMuted(muted);
+    this.setVoiceMuted(muted);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('sound_muted', String(muted));
+      window.dispatchEvent(new Event('sound-muted-change'));
+    }
   }
 
-  isSoundMuted() {
-    return localStorage.getItem('sound_muted') === 'true';
-  }
+  // --- ЗВУКОВЫЕ ЭФФЕКТЫ (SFX) ---
 
-  // Короткий «клик» (поп)
   playClick() {
     if (this.isSoundMuted()) return;
     try {
-      this.init();
+      this.initCtx();
       if (!this.ctx) return;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -45,11 +225,10 @@ class SoundManager {
     }
   }
 
-  // Успех (восходящее арпеджио)
   playSuccess() {
     if (this.isSoundMuted()) return;
     try {
-      this.init();
+      this.initCtx();
       if (!this.ctx) return;
       [523.25, 659.25, 783.99].forEach((freq, i) => {
         const osc = this.ctx!.createOscillator();
@@ -68,11 +247,10 @@ class SoundManager {
     }
   }
 
-  // Праздничные фанфары (конфетти / победа)
   playCelebration() {
     if (this.isSoundMuted()) return;
     try {
-      this.init();
+      this.initCtx();
       if (!this.ctx) return;
       const notes = [523.25, 659.25, 783.99, 1046.5];
       notes.forEach((freq, i) => {
@@ -92,11 +270,10 @@ class SoundManager {
     }
   }
 
-  // Звук «вжух» (плавный свист/вспышка)
   playWhoosh() {
     if (this.isSoundMuted()) return;
     try {
-      this.init();
+      this.initCtx();
       if (!this.ctx) return;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -115,11 +292,10 @@ class SoundManager {
     }
   }
 
-  // Ошибка (нисходящий звук)
   playError() {
     if (this.isSoundMuted()) return;
     try {
-      this.init();
+      this.initCtx();
       if (!this.ctx) return;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
@@ -135,6 +311,11 @@ class SoundManager {
       console.warn('AudioContext failed:', e);
     }
   }
+
+  isSoundMuted(): boolean {
+    return this.isMusicMuted();
+  }
 }
 
 export const sound = new SoundManager();
+export const soundManager = sound;

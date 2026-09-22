@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
+import { soundManager } from '../utils/soundManager';
 
 const SPARK_URL = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/spark/spark_splash.webp';
 const LOGO_URL = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/logo/logo-converted.webp';
@@ -13,6 +14,9 @@ export function SplashScreen() {
   const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
+    // Запускаем фоновую музыку (loading_loop)
+    soundManager.playMusic('loading_loop');
+
     // 4.5 сек показ + 0.5 сек fade out = 5.0 сек итого
     const timer = setTimeout(() => {
       setIsExiting(true);
