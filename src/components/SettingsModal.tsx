@@ -75,93 +75,103 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     onClose();
   };
 
+  const musicPercent = musicMuted ? 0 : Math.round(musicVolume * 100);
+  const voicePercent = voiceMuted ? 0 : Math.round(voiceVolume * 100);
+
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 select-none">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 md:p-6 select-none">
         {/* Затемнение фона */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={handleClose}
-          className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm"
+          className="absolute inset-0 bg-slate-950/60 backdrop-blur-sm cursor-pointer"
         />
 
-        {/* Контейнер модалки */}
+        {/* Контейнер модалки: точный размер, цвет и скругления */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 15 }}
+          initial={{ opacity: 0, scale: 0.92, y: 15 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 15 }}
+          exit={{ opacity: 0, scale: 0.92, y: 15 }}
           transition={{ type: 'spring', damping: 25, stiffness: 350 }}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-[460px] bg-white/95 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-white/70 overflow-hidden"
+          className="relative w-[calc(100vw-48px)] sm:w-full max-w-[720px] sm:max-w-[460px] max-h-[calc(100vh-32px)] sm:max-h-[calc(100vh-48px)] bg-slate-50/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-[0_20px_60px_rgba(0,0,0,0.25)] border border-white/70 flex flex-col overflow-hidden"
         >
-          {/* Декоративное свечение */}
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-400/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-400/20 rounded-full blur-3xl pointer-events-none" />
+          {/* Декоративное мягкое свечение */}
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-purple-400/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-400/15 rounded-full blur-3xl pointer-events-none" />
 
-          {/* Заголовок и кнопка закрытия */}
-          <div className="relative flex items-center justify-between pb-5 border-b border-slate-100">
-            <div className="flex items-center gap-2.5">
-              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-cyan-400 flex items-center justify-center text-white shadow-md shadow-purple-500/20">
-                <Sparkles size={20} className="fill-white/20" />
+          {/* 1. ШАПКА */}
+          <div className="relative flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-slate-200/60 shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3">
+              <div className="w-9 h-9 sm:w-12 sm:h-12 rounded-full bg-gradient-to-tr from-[#A855F7] to-[#22D3EE] flex items-center justify-center text-white shadow-md shadow-purple-500/20 shrink-0">
+                <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 fill-white/20" />
               </div>
-              <h2 className="text-xl sm:text-2xl font-bold text-slate-800 tracking-tight">
-                Настройки звука
-              </h2>
+              <div>
+                <h2 className="text-sm sm:text-lg md:text-xl font-bold text-slate-800 tracking-tight leading-tight">
+                  Настройки звука
+                </h2>
+                <p className="text-[11px] sm:text-xs text-slate-500 font-medium leading-tight">
+                  Настройте комфортный уровень звука для игры
+                </p>
+              </div>
             </div>
 
             <button
               onClick={handleClose}
-              className="w-10 h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer active:scale-95 shrink-0 ml-2"
               title="Закрыть"
             >
-              <X size={20} />
+              <X className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </button>
           </div>
 
-          {/* Секции настроек */}
-          <div className="relative mt-6 space-y-6">
+          {/* 2. ТЕЛО МОДАЛКИ: компактные блоки на mobile, оба полностью видны */}
+          <div className="relative flex-1 overflow-y-auto px-4 py-3 sm:px-6 sm:py-4 space-y-2.5 sm:space-y-4 custom-scrollbar">
             {/* БЛОК 1: Музыка */}
-            <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-3">
+            <div className="p-3 sm:p-4 bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-2 sm:space-y-3">
+              {/* Строка 1: иконка + заголовок + тумблер */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center">
-                    <Music size={19} />
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-purple-100/80 flex items-center justify-center shrink-0">
+                    <Music className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-800 text-base">Музыка</h3>
-                    <p className="text-xs text-slate-500">Фоновые мелодии и атмосфера</p>
+                    <h3 className="text-sm sm:text-base font-bold text-slate-800 leading-tight">Музыка</h3>
+                    <p className="hidden sm:block text-[10px] sm:text-xs text-slate-500">Фоновые мелодии и атмосфера</p>
                   </div>
                 </div>
 
                 {/* Тумблер Музыки */}
                 <button
+                  type="button"
                   onClick={handleToggleMusic}
-                  className={`w-12 h-7 rounded-full transition-colors relative cursor-pointer p-0.5 flex items-center ${
+                  className={`w-10 h-6 sm:w-12 sm:h-7 rounded-full transition-colors relative cursor-pointer p-0.5 flex items-center shrink-0 ${
                     !musicMuted
-                      ? 'bg-gradient-to-r from-purple-500 to-cyan-400 justify-end'
+                      ? 'bg-gradient-to-r from-[#A855F7] to-[#22D3EE] justify-end'
                       : 'bg-slate-300 justify-start'
                   }`}
                   title={musicMuted ? 'Включить музыку' : 'Выключить музыку'}
                 >
                   <motion.div
                     layout
-                    className="w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center text-slate-700"
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-700"
                   >
                     {!musicMuted ? (
-                      <Volume2 size={13} className="text-purple-600" />
+                      <Volume2 className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-purple-600" />
                     ) : (
-                      <VolumeX size={13} className="text-slate-400" />
+                      <VolumeX className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
                     )}
                   </motion.div>
                 </button>
               </div>
 
-              {/* Слайдер громкости музыки */}
-              <div className="pt-2 flex items-center gap-3">
-                <span className="text-xs font-semibold text-slate-400 w-8">
-                  {musicMuted ? '0%' : `${Math.round(musicVolume * 100)}%`}
+              {/* Строка 2: проценты + слайдер */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs sm:text-sm font-bold text-[#17345F] w-10 sm:w-12 shrink-0 text-left">
+                  {musicPercent}%
                 </span>
                 <input
                   type="range"
@@ -170,51 +180,56 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   step="0.05"
                   value={musicMuted ? 0 : musicVolume}
                   onChange={handleMusicVolumeChange}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                  className="flex-1 h-1 sm:h-1.5 sound-slider cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, #A855F7 0%, #22D3EE ${musicPercent}%, #E2E8F0 ${musicPercent}%, #E2E8F0 100%)`,
+                  }}
                 />
               </div>
             </div>
 
-            {/* БЛОК 2: Голос Спарк */}
-            <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100 space-y-3">
+            {/* БЛОК 2: Спарк */}
+            <div className="p-3 sm:p-4 bg-white rounded-2xl sm:rounded-3xl border border-slate-100 shadow-[0_2px_8px_rgba(0,0,0,0.04)] space-y-2 sm:space-y-3">
+              {/* Строка 1: иконка + заголовок + тумблер */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-cyan-100 text-cyan-600 flex items-center justify-center">
-                    <Mic size={19} />
+                <div className="flex items-center gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-cyan-100/80 flex items-center justify-center shrink-0">
+                    <Mic className="w-4 h-4 sm:w-5 sm:h-5 text-cyan-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slate-800 text-base">Голос Спарк</h3>
-                    <p className="text-xs text-slate-500">Озвучка подсказок и диалогов</p>
+                    <h3 className="text-sm sm:text-base font-bold text-slate-800 leading-tight">Спарк</h3>
+                    <p className="hidden sm:block text-[10px] sm:text-xs text-slate-500">Озвучка подсказок и диалогов</p>
                   </div>
                 </div>
 
-                {/* Тумблер Голоса */}
+                {/* Тумблер Спарка */}
                 <button
+                  type="button"
                   onClick={handleToggleVoice}
-                  className={`w-12 h-7 rounded-full transition-colors relative cursor-pointer p-0.5 flex items-center ${
+                  className={`w-10 h-6 sm:w-12 sm:h-7 rounded-full transition-colors relative cursor-pointer p-0.5 flex items-center shrink-0 ${
                     !voiceMuted
-                      ? 'bg-gradient-to-r from-purple-500 to-cyan-400 justify-end'
+                      ? 'bg-gradient-to-r from-[#A855F7] to-[#22D3EE] justify-end'
                       : 'bg-slate-300 justify-start'
                   }`}
-                  title={voiceMuted ? 'Включить голос' : 'Выключить голос'}
+                  title={voiceMuted ? 'Включить Спарка' : 'Выключить Спарка'}
                 >
                   <motion.div
                     layout
-                    className="w-6 h-6 rounded-full bg-white shadow-md flex items-center justify-center text-slate-700"
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-white shadow-sm flex items-center justify-center text-slate-700"
                   >
                     {!voiceMuted ? (
-                      <Mic size={13} className="text-cyan-600" />
+                      <Mic className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-cyan-600" />
                     ) : (
-                      <MicOff size={13} className="text-slate-400" />
+                      <MicOff className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-slate-400" />
                     )}
                   </motion.div>
                 </button>
               </div>
 
-              {/* Слайдер громкости голоса */}
-              <div className="pt-2 flex items-center gap-3">
-                <span className="text-xs font-semibold text-slate-400 w-8">
-                  {voiceMuted ? '0%' : `${Math.round(voiceVolume * 100)}%`}
+              {/* Строка 2: проценты + слайдер */}
+              <div className="flex items-center gap-3">
+                <span className="text-xs sm:text-sm font-bold text-[#17345F] w-10 sm:w-12 shrink-0 text-left">
+                  {voicePercent}%
                 </span>
                 <input
                   type="range"
@@ -223,24 +238,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                   step="0.05"
                   value={voiceMuted ? 0 : voiceVolume}
                   onChange={handleVoiceVolumeChange}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                  className="flex-1 h-1 sm:h-1.5 sound-slider cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, #A855F7 0%, #22D3EE ${voicePercent}%, #E2E8F0 ${voicePercent}%, #E2E8F0 100%)`,
+                  }}
                 />
               </div>
             </div>
           </div>
 
-          {/* Кнопка «Готово» */}
-          <div className="mt-7">
+          {/* 3. ФУТЕР: кнопка «Готово» */}
+          <div className="relative px-4 py-3 sm:px-6 sm:py-4 border-t border-slate-200/60 shrink-0 bg-slate-50/80 backdrop-blur-sm">
             <motion.button
-              whileHover={{ scale: 1.02, filter: 'brightness(1.05)' }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={{ scale: 1.012, filter: 'brightness(1.05)' }}
+              whileTap={{ scale: 0.985 }}
               onClick={handleClose}
-              className="w-full h-13 rounded-2xl flex items-center justify-center gap-2 text-white font-bold text-lg shadow-[0_8px_20px_rgba(168,85,247,0.3)] transition-all cursor-pointer"
+              className="w-full h-10 sm:h-12 md:h-13 rounded-2xl flex items-center justify-center gap-2 text-white font-bold text-sm sm:text-base md:text-lg shadow-[0_8px_20px_rgba(168,85,247,0.3)] transition-all cursor-pointer"
               style={{
                 background: 'linear-gradient(135deg, #A855F7 0%, #22D3EE 100%)',
               }}
             >
-              <Check size={20} className="stroke-[2.5]" />
+              <Check className="w-4 h-4 sm:w-4.5 sm:h-4.5 stroke-[2.5]" />
               <span>Готово</span>
             </motion.button>
           </div>
@@ -249,4 +267,5 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     </AnimatePresence>
   );
 }
+
 export default SettingsModal;

@@ -119,7 +119,54 @@ h1, h2, h3, h4, h5, h6, .heading {
   97% { transform: scaleY(0.1); }
 }
 
-/* Accessibility: prefers-reduced-motion support */
+/* Custom Scrollbar Utility */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+  background: transparent;
+}
+.custom-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/* Sound Modal Gradient Slider */
+.sound-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  border-radius: 9999px;
+  outline: none;
+}
+.sound-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #A855F7;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.45);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.sound-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+}
+.sound-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #A855F7;
+  border: 3px solid #FFFFFF;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.45);
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+.sound-slider::-moz-range-thumb:hover {
+  transform: scale(1.1);
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
