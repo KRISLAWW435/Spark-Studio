@@ -9,10 +9,10 @@ class SoundManager {
     // Инициализация дефолтных значений в localStorage при первом запуске
     if (typeof window !== 'undefined') {
       if (localStorage.getItem('music_volume') === null) {
-        localStorage.setItem('music_volume', '0.4');
+        localStorage.setItem('music_volume', '0.5');
       }
       if (localStorage.getItem('voice_volume') === null) {
-        localStorage.setItem('voice_volume', '0.8');
+        localStorage.setItem('voice_volume', '1.0');
       }
       if (localStorage.getItem('music_muted') === null) {
         localStorage.setItem('music_muted', 'false');
@@ -22,26 +22,66 @@ class SoundManager {
         const existingSparkMuted = localStorage.getItem('spark_voice_muted') === 'true';
         localStorage.setItem('voice_muted', String(existingSparkMuted));
       }
+
+      // Глобальный обработчик разблокировки звука при первом клике/касании
+      this.attachGlobalUnlockListener();
     }
   }
 
-  private initCtx() {
-    if (!this.ctx && typeof window !== 'undefined') {
+  /**
+   * Разблокировка и инициализация AudioContext
+   */
+  public initCtx() {
+    if (typeof window === 'undefined') return;
+
+    if (!this.ctx) {
       const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }
     }
+
     if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume().catch(() => {});
     }
+
+    // Если фоновая музыка была поставлена на паузу браузером — возобновляем
+    if (this.currentMusicAudio && this.currentMusicAudio.paused && !this.isMusicMuted()) {
+      this.currentMusicAudio.play().catch(() => {});
+    }
+  }
+
+  /**
+   * Прикрепляет глобальный слушатель первого пользовательского взаимодействия
+   */
+  private attachGlobalUnlockListener() {
+    const unlock = () => {
+      this.initCtx();
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('audio_unlocked', 'true');
+        window.dispatchEvent(new Event('audio-unlocked'));
+      }
+      cleanup();
+    };
+
+    const cleanup = () => {
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('touchstart', unlock);
+      window.removeEventListener('pointerdown', unlock);
+      window.removeEventListener('keydown', unlock);
+    };
+
+    window.addEventListener('click', unlock, { passive: true });
+    window.addEventListener('touchstart', unlock, { passive: true });
+    window.addEventListener('pointerdown', unlock, { passive: true });
+    window.addEventListener('keydown', unlock, { passive: true });
   }
 
   // --- ФОНОВАЯ МУЗЫКА ---
 
   /**
    * Запускает фоновую музыку зациклено
-   * @param trackId Имя файла без расширения (например, 'menu_bg')
+   * @param trackId Имя файла без расширения (например, 'menu_bg' или 'loading_loop')
    */
   playMusic(trackId: string) {
     if (typeof window === 'undefined') return;
@@ -129,9 +169,9 @@ class SoundManager {
   // --- УПРАВЛЕНИЕ ГРОМКОСТЬЮ И MUTE ---
 
   getMusicVolume(): number {
-    if (typeof window === 'undefined') return 0.4;
+    if (typeof window === 'undefined') return 0.5;
     const v = localStorage.getItem('music_volume');
-    return v !== null ? parseFloat(v) : 0.4;
+    return v !== null ? parseFloat(v) : 0.5;
   }
 
   setMusicVolume(v: number) {
@@ -146,9 +186,9 @@ class SoundManager {
   }
 
   getVoiceVolume(): number {
-    if (typeof window === 'undefined') return 0.8;
+    if (typeof window === 'undefined') return 1.0;
     const v = localStorage.getItem('voice_volume');
-    return v !== null ? parseFloat(v) : 0.8;
+    return v !== null ? parseFloat(v) : 1.0;
   }
 
   setVoiceVolume(v: number) {

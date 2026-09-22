@@ -1,5 +1,5 @@
 // src/App.tsx
-import React from 'react';
+import { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router';
 import { PlayerProvider } from './context/PlayerContext';
 import { AppLayout } from './components/layout/AppLayout';
@@ -13,10 +13,17 @@ import { StudioSetup } from './pages/StudioSetup';
 import { Practice } from './pages/Practice';
 import { Final } from './pages/Final';
 import { SubtitlesBar } from './components/ui/SubtitlesBar';
+import { StartOverlay } from './components/StartOverlay';
 
 export default function App() {
+  // Экран «Магия творчества» показывается каждый раз при входе для разблокировки звука в браузерах
+  const [isStarted, setIsStarted] = useState(false);
+
   return (
     <PlayerProvider>
+      {/* Волшебный стартовый экран «Магия творчества» */}
+      {!isStarted && <StartOverlay onStart={() => setIsStarted(true)} />}
+
       <HashRouter>
         <SubtitlesBar />
         <Routes>

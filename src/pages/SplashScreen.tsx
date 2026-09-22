@@ -14,19 +14,43 @@ export function SplashScreen() {
   const [logoError, setLogoError] = useState(false);
 
   useEffect(() => {
-    // Запускаем фоновую музыку (loading_loop)
-    soundManager.playMusic('loading_loop');
+    let timer: NodeJS.Timeout | null = null;
+    let navTimer: NodeJS.Timeout | null = null;
 
-    // 4.5 сек показ + 0.5 сек fade out = 5.0 сек итого
-    const timer = setTimeout(() => {
-      setIsExiting(true);
-      const navTimer = setTimeout(() => {
-        navigate('/loading', { replace: true });
-      }, 500);
-      return () => clearTimeout(navTimer);
-    }, 4500);
+    const startSplashFlow = () => {
+      // Запускаем фоновую музыку (loading_loop)
+      soundManager.playMusic('loading_loop');
 
-    return () => clearTimeout(timer);
+      // 4.5 сек показ + 0.5 сек fade out = 5.0 сек итого
+      timer = setTimeout(() => {
+        setIsExiting(true);
+        navTimer = setTimeout(() => {
+          navigate('/loading', { replace: true });
+        }, 500);
+      }, 4500);
+    };
+
+    const isAlreadyUnlocked = (window as unknown as { __sparkAudioUnlocked?: boolean }).__sparkAudioUnlocked;
+
+    if (isAlreadyUnlocked) {
+      startSplashFlow();
+    } else {
+      const handleUnlocked = () => {
+        (window as unknown as { __sparkAudioUnlocked?: boolean }).__sparkAudioUnlocked = true;
+        startSplashFlow();
+      };
+      window.addEventListener('audio-unlocked', handleUnlocked, { once: true });
+      return () => {
+        window.removeEventListener('audio-unlocked', handleUnlocked);
+        if (timer) clearTimeout(timer);
+        if (navTimer) clearTimeout(navTimer);
+      };
+    }
+
+    return () => {
+      if (timer) clearTimeout(timer);
+      if (navTimer) clearTimeout(navTimer);
+    };
   }, [navigate]);
 
   return (
