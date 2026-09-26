@@ -23,6 +23,11 @@ import { sparkVoice } from '../utils/sparkVoicePlayer';
 import { SettingsModal } from '../components/SettingsModal';
 import { useResponsiveLayout, useIsPortrait } from '../hooks/useResponsiveLayout';
 import { SparkBubble } from '../components/SparkBubble';
+import {
+  isFullscreenActive,
+  requestFullscreen,
+  toggleFullscreen as toggleFullscreenUtil,
+} from '../utils/fullscreen';
 
 const MENU_BG = `${import.meta.env.BASE_URL}assets/backgrounds/menu-bg-clean.webp`;
 const LOGO_URL = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/logo/logo-converted.webp';
@@ -45,42 +50,63 @@ export function MainMenu() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [logoError, setLogoError] = useState(false);
 
-  const [isFullscreen, setIsFullscreen] = useState<boolean>(() => {
-    if (typeof document !== 'undefined') {
-      return Boolean(document.fullscreenElement);
-    }
-    return false;
-  });
+  // Состояние fullscreen
+  const [isFullscreen, setIsFullscreen] = useState(() => isFullscreenActive());
 
   const [toast, setToast] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. Полноэкранный режим
-  const toggleFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
-      }
-    }
+  // Следим за изменением fullscreen
+  useEffect(() => {
+    const handler = () => setIsFullscreen(isFullscreenActive());
+    document.addEventListener('fullscreenchange', handler);
+    document.addEventListener('webkitfullscreenchange', handler);
+    document.addEventListener('mozfullscreenchange', handler);
+    document.addEventListener('MSFullscreenChange', handler);
+    return () => {
+      document.removeEventListener('fullscreenchange', handler);
+      document.removeEventListener('webkitfullscreenchange', handler);
+      document.removeEventListener('mozfullscreenchange', handler);
+      document.removeEventListener('MSFullscreenChange', handler);
+    };
   }, []);
+
+  // Функция переключения fullscreen с graceful fallback для iframe
+  const toggleFullscreen = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    sound.playClick();
+
+    const isSupported =
+      typeof document !== 'undefined' &&
+      Boolean(
+        document.fullscreenEnabled ||
+        (document as any).webkitFullscreenEnabled ||
+        (document as any).mozFullScreenEnabled ||
+        (document as any).msFullscreenEnabled
+      );
+
+    if (!isSupported) {
+      setToast({
+        type: 'error',
+        text: 'Полноэкранный режим заблокирован во фрейме. Откройте игру в новой вкладке ↗',
+      });
+      return;
+    }
+
+    try {
+      toggleFullscreenUtil();
+    } catch (err) {
+      console.warn('Fullscreen error:', err);
+      setToast({
+        type: 'error',
+        text: 'Не удалось включить полноэкранный режим. Откройте в новой вкладке ↗',
+      });
+    }
+  };
 
   const tryEnterFullscreen = useCallback(() => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    }
-  }, []);
-
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(Boolean(document.fullscreenElement));
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-    };
+    requestFullscreen();
   }, []);
 
   // 2. Автоповорот для планшета и мобильного (Landscape Lock)
@@ -223,38 +249,38 @@ export function MainMenu() {
 
   const buttonsConfig = {
     mobile: {
-      containerClass: 'absolute left-1/2 -translate-x-1/2 bottom-3 flex flex-col items-center gap-1.5 z-20',
-      buttonWidth: 'w-[140px]',
-      buttonHeight: 'h-[32px]',
-      buttonFont: 'text-xs font-bold',
-      keyFont: 'text-[10px] font-bold',
-      iconSize: 12,
-      subTextFont: 'hidden',
-      subTextMargin: '',
-      showKeySubtext: false,
-      keyButtonLabel: 'Загрузить ключ',
+      containerClass: 'absolute left-1/2 -translate-x-1/2 bottom-3 flex flex-col items-center gap-3 z-20 w-full px-4',
+      buttonWidth: 'w-full max-w-[280px]',
+      buttonHeight: 'min-h-[42px] h-[44px]',
+      buttonFont: 'text-sm font-bold',
+      keyFont: 'text-xs font-bold',
+      iconSize: 16,
+      subTextFont: 'text-[11px]',
+      subTextMargin: 'mt-1',
+      showKeySubtext: true,
+      keyButtonLabel: 'Загрузить ключ от студии',
     },
     tablet: {
-      containerClass: 'absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2.5 z-20 w-full px-4',
-      buttonWidth: 'w-[320px]',
-      buttonHeight: 'min-h-[48px] h-[50px]',
+      containerClass: 'absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-20 w-full px-4',
+      buttonWidth: 'w-full max-w-[340px]',
+      buttonHeight: 'min-h-[48px] h-[52px]',
       buttonFont: 'text-base font-bold',
       keyFont: 'text-base font-bold',
       iconSize: 20,
       subTextFont: 'text-sm',
-      subTextMargin: 'mt-2.5',
+      subTextMargin: 'mt-2',
       showKeySubtext: true,
       keyButtonLabel: 'Загрузить ключ от студии',
     },
     desktop: {
       containerClass: 'absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-20 w-full px-4',
-      buttonWidth: 'w-[380px]',
+      buttonWidth: 'w-full max-w-[380px]',
       buttonHeight: 'min-h-[52px] h-[58px]',
       buttonFont: 'text-lg font-bold',
       keyFont: 'text-lg font-bold',
       iconSize: 22,
       subTextFont: 'text-base',
-      subTextMargin: 'mt-3',
+      subTextMargin: 'mt-2.5',
       showKeySubtext: true,
       keyButtonLabel: 'Загрузить ключ от студии',
     },
@@ -263,8 +289,15 @@ export function MainMenu() {
   return (
     <div
       onClick={tryEnterFullscreen}
-      className="relative w-screen h-screen overflow-hidden select-none bg-[#EEF2FF]"
+      className="relative w-full h-screen overflow-hidden select-none pl-[max(16px,env(safe-area-inset-left))] pr-[max(16px,env(safe-area-inset-right))] pt-[max(12px,env(safe-area-inset-top))] pb-[max(12px,env(safe-area-inset-bottom))]"
     >
+      {/* 1. ФОН — картинка со Спарком */}
+      <img
+        src={MENU_BG}
+        className="absolute inset-0 w-full h-full object-cover -z-10"
+        alt="Фон меню"
+      />
+
       {/* ================= БАННЕР «ПОВЕРНИ УСТРОЙСТВО» ДЛЯ ПОРТРЕТА ================= */}
       {isPortrait && (
         <div className="fixed inset-0 z-50 bg-slate-900/95 flex items-center justify-center">
@@ -274,91 +307,64 @@ export function MainMenu() {
         </div>
       )}
 
-      {/* 1. ФОН */}
-      <div
-        className="absolute inset-0 bg-cover bg-center"
-        style={{ backgroundImage: `url(${MENU_BG})` }}
-      />
+      {/* 2. Лого — по центру сверху (увеличен на десктопе) */}
+      <div className="absolute top-3 sm:top-5 md:top-6 left-1/2 -translate-x-1/2 z-30">
+        <img
+          src="/assets/logo.png"
+          alt="Spark Studio"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = LOGO_URL;
+          }}
+          className="h-10 sm:h-12 md:h-16 lg:h-20 w-auto drop-shadow-md object-contain"
+        />
+      </div>
 
-      {/* 2. ЛОГОТИП СТУДИИ (Точное позиционирование через inline-стиль) */}
-      <motion.div
-        initial={{ opacity: 0, y: -15 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: 'easeOut' }}
-        className="absolute left-1/2 -translate-x-1/2 z-20 pointer-events-none flex justify-center"
-        style={{
-          top: logoConfig.top,
-        }}
-      >
-        {!logoError ? (
-          <img
-            src={LOGO_URL}
-            alt="Spark Studio"
-            onError={() => setLogoError(true)}
-            className="h-auto object-contain drop-shadow-md"
-            style={{
-              width: logoConfig.width,
-              height: 'auto',
-            }}
-          />
-        ) : (
-          <div
-            className="text-center px-4 py-1.5 bg-white/85 rounded-2xl border border-purple-200 shadow-sm"
-            style={{ width: logoConfig.width }}
-          >
-            <span className="text-xl md:text-2xl font-black bg-gradient-to-r from-purple-600 via-pink-600 to-amber-500 bg-clip-text text-transparent">
-              SPARK STUDIO
-            </span>
-          </div>
-        )}
-      </motion.div>
-
-      {/* 3. ВЕРХНИЕ ПРАВЫЕ КНОПКИ И БЕЙДЖ ИГРОКА */}
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 md:top-5 md:right-5 z-30 flex items-center gap-2 sm:gap-2.5">
-        {/* Бейдж игрока: вынесен из кнопки [👤 Имя · 💰 Монеты] */}
-        {hasSave && (
-          <div className="flex items-center gap-1.5 px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full bg-white/85 backdrop-blur-md border border-white/70 text-slate-800 shadow-sm text-xs sm:text-sm font-semibold select-none">
-            <span>👤 {userName || 'Кристина'}</span>
-            <span className="text-slate-400">·</span>
-            <span>💰 {player.coins || 0}</span>
-          </div>
-        )}
-
-        {/* Кнопка настроек */}
-        <motion.button
-          whileHover={{ scale: 1.05, filter: 'brightness(1.1)' }}
-          whileTap={{ scale: 0.95 }}
+      {/* 3. Кнопки управления — в ЛЕВЫЙ верхний угол (с комфортным отступом от края) */}
+      <div className="absolute top-3.5 sm:top-5 md:top-6 left-6 sm:left-8 md:left-10 lg:left-12 z-30 flex items-center gap-2.5 sm:gap-3">
+        <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             sound.playClick();
             setIsSettingsOpen(true);
           }}
-          title="Настройки звука"
-          className="w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white cursor-pointer transition-all active:scale-95 shadow-md"
-          style={{
-            background: 'linear-gradient(135deg, #A855F7 0%, #22D3EE 100%)',
-          }}
+          title="Настройки"
+          className="
+            w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12
+            rounded-full
+            bg-white/90 backdrop-blur-md
+            border-2 border-[#A855F7]
+            text-[#7E22CE]
+            flex items-center justify-center
+            shadow-lg shadow-purple-900/30
+            hover:bg-white hover:scale-105
+            active:scale-90
+            transition-all
+            cursor-pointer
+          "
         >
-          <Settings size={18} className="text-white" />
-        </motion.button>
-
-        {/* Кнопка Fullscreen */}
-        <motion.button
-          whileHover={{ scale: 1.05, filter: 'brightness(1.1)' }}
-          whileTap={{ scale: 0.95 }}
-          onClick={(e) => {
-            e.stopPropagation();
-            sound.playClick();
-            toggleFullscreen();
-          }}
+          <Settings size={15} className="md:w-5 md:h-5" />
+        </button>
+        <button
+          type="button"
+          onClick={toggleFullscreen}
           title={isFullscreen ? 'Выйти из полноэкранного режима' : 'Полноэкранный режим'}
-          className="w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 rounded-full flex items-center justify-center text-white cursor-pointer transition-all active:scale-95 shadow-md"
-          style={{
-            background: 'linear-gradient(135deg, #A855F7 0%, #22D3EE 100%)',
-          }}
+          className="
+            w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12
+            rounded-full
+            bg-white/90 backdrop-blur-md
+            border-2 border-[#A855F7]
+            text-[#7E22CE]
+            flex items-center justify-center
+            shadow-lg shadow-purple-900/30
+            hover:bg-white hover:scale-105
+            active:scale-90
+            transition-all
+            cursor-pointer
+          "
         >
-          {isFullscreen ? <Minimize2 size={18} className="text-white" /> : <Maximize2 size={18} className="text-white" />}
-        </motion.button>
+          {isFullscreen ? <Minimize2 size={15} className="md:w-5 md:h-5" /> : <Maximize2 size={15} className="md:w-5 md:h-5" />}
+        </button>
       </div>
 
       {/* Скрытый инпут для ключа студии */}
@@ -393,102 +399,170 @@ export function MainMenu() {
         )}
       </AnimatePresence>
 
-      {/* 4. ДИАЛОГОВОЕ ОБЛАЧКО СПАРКА (Ровное, точное, хвостик SVG, адаптивное) */}
-      <SparkBubble
-        message={SPARK_MENU_PHRASES[messageIndex]?.text || ''}
-        layout={layout}
+      {/* 4. Бабл — справа, стрелочка направлена ВЛЕВО на Спарка, увеличен на десктопе */}
+      <div
         onClick={handleBubbleClick}
-        isMuted={isMuted}
-        onToggleMute={handleToggleMute}
-        showVoiceIcon={true}
-      />
+        className="
+          absolute z-20
+          right-[3%] sm:right-[4%] md:right-[6%] lg:right-[7%]
+          top-[14%] sm:top-[15%] md:top-[16%]
+          w-auto
+          max-w-[190px] sm:max-w-[240px] md:max-w-[340px] lg:max-w-[390px]
+          bg-white/95 backdrop-blur-md
+          p-3 sm:p-3.5 md:p-5
+          rounded-2xl md:rounded-3xl
+          border-2 md:border-3 border-[#A855F7]
+          shadow-xl md:shadow-2xl shadow-purple-900/20
+          cursor-pointer
+          select-none
+        "
+      >
+        <div className="flex items-center min-h-[22px] md:min-h-[36px]">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={messageIndex}
+              initial={{ opacity: 0, y: 3 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -3 }}
+              transition={{ duration: 0.2 }}
+              className="text-[11px] sm:text-xs md:text-base lg:text-lg font-bold text-slate-800 leading-snug md:leading-normal pr-6 md:pr-8 break-words"
+            >
+              {SPARK_MENU_PHRASES[messageIndex]?.text || ''}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+        {/* Хвостик/стрелочка — строго ВЛЕВО (в сторону Спарка) */}
+        <div className="absolute -left-2 md:-left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 md:w-5 md:h-5 bg-white border-l-2 md:border-l-3 border-b-2 md:border-b-3 border-[#A855F7] rotate-45 pointer-events-none" />
+        {/* Mute */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleToggleMute(e);
+          }}
+          title={isMuted ? 'Включить озвучку' : 'Выключить озвучку'}
+          className="absolute bottom-1 right-1 md:bottom-2 md:right-2 p-1 md:p-1.5 rounded-full text-slate-400 hover:text-purple-600 transition-colors z-20 cursor-pointer"
+        >
+          {isMuted ? <VolumeX size={13} className="md:w-5 md:h-5" /> : <Volume2 size={13} className="md:w-5 md:h-5" />}
+        </button>
+      </div>
 
-      {/* 5. КНОПКИ ВНИЗУ ЭКРАНА (Адаптивные отступы и размеры) */}
-      <div className={buttonsConfig.containerClass}>
-        {/* Первый вход: Только кнопка «Создать новую студию» */}
+      {/* 5. Кнопки меню — в ряд, приподняты выше, увеличены на десктопе, анимация при наведении */}
+      <div className="
+        absolute z-20
+        bottom-[7%] sm:bottom-[7.5%] md:bottom-[8%] lg:bottom-[9%]
+        left-1/2 -translate-x-1/2
+        w-[94%] sm:w-[88%] md:w-auto
+        max-w-none md:max-w-[960px] lg:max-w-[1060px]
+        flex flex-row
+        items-center justify-center
+        gap-2 sm:gap-3 md:gap-4
+      ">
         {!hasSave ? (
-          <motion.button
-            whileHover={{ scale: 1.02, filter: 'brightness(1.08)' }}
-            whileTap={{ scale: 0.98 }}
+          <button
+            type="button"
             onClick={handleNewStudio}
-            className={`${buttonsConfig.buttonWidth} ${buttonsConfig.buttonHeight} px-3 sm:px-5 rounded-full flex items-center justify-center gap-2 text-white shadow-[0_8px_20px_rgba(168,85,247,0.35)] transition-all cursor-pointer`}
-            style={{
-              background: 'linear-gradient(90deg, #A855F7 0%, #C084FC 50%, #22D3EE 100%)',
-            }}
+            className="
+              flex-1 md:flex-initial md:min-w-[320px] lg:min-w-[360px]
+              h-11 sm:h-12 md:h-14 lg:h-[60px]
+              rounded-2xl md:rounded-3xl
+              bg-gradient-to-r from-[#A855F7] to-[#06B6D4]
+              text-white font-bold text-xs sm:text-sm md:text-base lg:text-lg uppercase
+              shadow-[0_4px_0_#6B21A8] md:shadow-[0_5px_0_#6B21A8]
+              hover:scale-105
+              active:scale-95 active:translate-y-0.5 active:shadow-[0_1px_0_#6B21A8]
+              transition-all duration-200
+              flex items-center justify-center gap-2
+              cursor-pointer
+            "
           >
-            <Plus size={buttonsConfig.iconSize} className="text-white stroke-[2.5]" />
-            <span className={`${buttonsConfig.buttonFont} tracking-wide`}>
-              Создать новую студию
-            </span>
-          </motion.button>
+            <Plus size={16} className="md:w-5 md:h-5" /> <span>Создать студию</span>
+          </button>
         ) : (
           <>
-            {/* Кнопка 1: «Продолжить» (Без имени и монет, только текст и стрелка) */}
-            <motion.button
-              whileHover={{ scale: 1.02, filter: 'brightness(1.08)' }}
-              whileTap={{ scale: 0.98 }}
+            {/* 1. Продолжить */}
+            <button
+              type="button"
               onClick={handleContinue}
-              className={`${buttonsConfig.buttonWidth} ${buttonsConfig.buttonHeight} px-3 sm:px-5 rounded-full flex items-center justify-between text-white shadow-[0_8px_20px_rgba(168,85,247,0.35)] transition-all cursor-pointer`}
-              style={{
-                background: 'linear-gradient(90deg, #A855F7 0%, #C084FC 50%, #22D3EE 100%)',
-              }}
+              className="
+                flex-1 md:flex-initial md:min-w-[240px] lg:min-w-[270px]
+                h-11 sm:h-12 md:h-14 lg:h-[60px]
+                px-3 sm:px-4 md:px-6
+                rounded-2xl md:rounded-3xl
+                bg-gradient-to-r from-[#A855F7] to-[#06B6D4]
+                text-white font-bold text-xs sm:text-sm md:text-base lg:text-lg uppercase
+                shadow-[0_4px_0_#6B21A8] md:shadow-[0_5px_0_#6B21A8]
+                hover:scale-105
+                active:scale-95 active:translate-y-0.5 active:shadow-[0_1px_0_#6B21A8]
+                transition-all duration-200
+                flex items-center justify-center gap-2
+                cursor-pointer
+              "
             >
-              <div className="flex items-center gap-1.5">
-                {layout === 'mobile' && (
-                  <Play size={buttonsConfig.iconSize} className="text-white fill-white shrink-0" />
-                )}
-                <span className={`${buttonsConfig.buttonFont} tracking-wide`}>
-                  Продолжить
-                </span>
-              </div>
-              {layout !== 'mobile' && (
-                <ArrowRight size={buttonsConfig.iconSize} className="text-white shrink-0" />
-              )}
-            </motion.button>
+              <Play size={16} className="fill-white md:w-5 md:h-5" /> <span>Продолжить</span>
+            </button>
 
-            {/* Кнопка 2: «Новая студия» (Вторичная) */}
-            <motion.button
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
+            {/* 2. Новая студия */}
+            <button
+              type="button"
               onClick={handleNewStudio}
-              className={`${buttonsConfig.buttonWidth} ${buttonsConfig.buttonHeight} rounded-full flex items-center justify-center gap-1.5 sm:gap-2 border-2 border-[#A855F7] text-[#A855F7] bg-white/10 backdrop-blur-xs hover:bg-[#A855F7]/15 transition-colors shadow-sm cursor-pointer`}
+              className="
+                flex-1 md:flex-initial md:min-w-[200px] lg:min-w-[230px]
+                h-11 sm:h-12 md:h-14 lg:h-[60px]
+                px-3 sm:px-4 md:px-6
+                rounded-2xl md:rounded-3xl
+                bg-white
+                text-[#7E22CE] font-bold text-xs sm:text-sm md:text-base lg:text-lg
+                border-2 md:border-3 border-[#A855F7]
+                shadow-[0_3px_0_#7E22CE] md:shadow-[0_4px_0_#7E22CE]
+                hover:scale-105 hover:bg-purple-50/50
+                active:scale-95 active:translate-y-0.5 active:shadow-[0_1px_0_#7E22CE]
+                transition-all duration-200
+                flex items-center justify-center gap-2
+                cursor-pointer
+              "
             >
-              <Plus size={buttonsConfig.iconSize} className="text-[#A855F7] stroke-[2.5]" />
-              <span className={buttonsConfig.buttonFont}>
-                Новая студия
-              </span>
-            </motion.button>
+              <span>+ Новая студия</span>
+            </button>
 
-            {/* Кнопка 3: «Загрузить ключ от студии» (Третичная) */}
-            <div className={`flex flex-col items-center ${buttonsConfig.buttonWidth}`}>
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  tryEnterFullscreen();
-                  fileInputRef.current?.click();
-                }}
-                className={`w-full ${buttonsConfig.buttonHeight} rounded-full flex items-center justify-center gap-1.5 sm:gap-2 border border-[#A855F7]/40 text-[#A855F7] bg-white/10 backdrop-blur-xs ${buttonsConfig.keyFont} hover:bg-[#A855F7]/15 transition-colors cursor-pointer`}
-              >
-                <Key size={buttonsConfig.iconSize} className="text-[#A855F7]" />
-                <span>{buttonsConfig.keyButtonLabel}</span>
-              </motion.button>
-              {buttonsConfig.showKeySubtext && (
-                <p className={`${buttonsConfig.subTextFont} ${buttonsConfig.subTextMargin} text-slate-600 font-medium tracking-normal text-center`}>
-                  Продолжить на другом устройстве
-                </p>
-              )}
-            </div>
+            {/* 3. Загрузить ключ — БЕЛАЯ, с текстом внутри */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                tryEnterFullscreen();
+                fileInputRef.current?.click();
+              }}
+              className="
+                flex-1 md:flex-initial md:min-w-[220px] lg:min-w-[250px]
+                h-11 sm:h-12 md:h-14 lg:h-[60px]
+                px-2 sm:px-3 md:px-5
+                rounded-2xl md:rounded-3xl
+                bg-white
+                border-2 md:border-3 border-[#22D3EE]
+                shadow-[0_3px_0_#0891B2] md:shadow-[0_4px_0_#0891B2]
+                hover:bg-cyan-50/70
+                hover:scale-105
+                active:scale-95 active:translate-y-0.5 active:shadow-[0_1px_0_#0891B2]
+                transition-all duration-200
+                flex flex-col items-center justify-center
+                cursor-pointer
+              "
+            >
+              <div className="flex items-center gap-1.5 leading-tight">
+                <Key size={14} className="text-[#0891B2] shrink-0 md:w-4 md:h-4" />
+                <span className="text-[#0891B2] font-bold text-xs sm:text-sm md:text-base lg:text-lg">Загрузить ключ</span>
+              </div>
+              <span className="text-[9px] sm:text-[10px] md:text-xs lg:text-[13px] text-[#0891B2]/80 font-medium leading-tight tracking-tight mt-0.5 whitespace-nowrap">
+                Продолжить на другом устройстве
+              </span>
+            </button>
           </>
         )}
       </div>
 
-      {/* МОДАЛКА НАСТРОЕК ЗВУКА */}
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
+      {/* Модалка настроек */}
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
     </div>
   );
 }

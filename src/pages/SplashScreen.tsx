@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundManager } from '../utils/soundManager';
+import { requestFullscreen } from '../utils/fullscreen';
 
 const SPARK_URL = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/spark/spark_splash.webp';
 const LOGO_URL = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/logo/logo-converted.webp';
@@ -16,6 +17,7 @@ export function SplashScreen() {
 
   // Переход на экран загрузки /loading
   const proceedToLoading = useCallback(() => {
+    requestFullscreen();
     if (hasNavigatedRef.current) return;
     hasNavigatedRef.current = true;
     setIsExiting(true);

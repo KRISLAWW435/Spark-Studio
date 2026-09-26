@@ -1,8 +1,9 @@
 // src/components/StartOverlay.tsx
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundManager } from '../utils/soundManager';
+import { requestFullscreen } from '../utils/fullscreen';
 import {
   MagicButton,
   ParticleBurst,
@@ -20,6 +21,7 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
   const [phase, setPhase] = useState<'idle' | 'press' | 'burst' | 'transition'>('idle');
   const [isHovered, setIsHovered] = useState(false);
   const [showFlash, setShowFlash] = useState(false);
+  const hasTriggeredRef = useRef(false);
 
   const layout = useResponsiveLayout();
   const isMobile = layout === 'mobile';
@@ -39,80 +41,37 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
     setIsHovered(false);
   }, [phase]);
 
-  // Запрос полноэкранного режима при первом клике пользователя
-  const requestFullscreenMode = () => {
-    const elem = document.documentElement as HTMLElement & {
-      mozRequestFullScreen?: () => Promise<void>;
-      webkitRequestFullscreen?: () => Promise<void>;
-      msRequestFullscreen?: () => Promise<void>;
-    };
-
-    if (!document.fullscreenElement) {
-      if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(() => {});
-      } else if (elem.webkitRequestFullscreen) {
-        /* Safari / iOS */
-        elem.webkitRequestFullscreen().catch(() => {});
-      } else if (elem.mozRequestFullScreen) {
-        /* Firefox */
-        elem.mozRequestFullScreen().catch(() => {});
-      } else if (elem.msRequestFullscreen) {
-        /* IE/Edge */
-        elem.msRequestFullscreen().catch(() => {});
-      }
-    }
-  };
-
-  // Запуск сценария ТОЛЬКО при нажатии на магическую 3D-кнопку
-  const handleStart = async () => {
-    if (phase !== 'idle') return;
-
-    // Вход в Fullscreen API по первому взаимодействию
-    requestFullscreenMode();
-
-    // 1. Разблокировать AudioContext
-    await soundManager.initCtx();
-
-    // 2. Форсировать resume (для Chrome / Safari)
-    if (soundManager.ctx && soundManager.ctx.state === 'suspended') {
-      try {
-        await soundManager.ctx.resume();
-      } catch (e) {
-        console.warn('AudioContext resume failed:', e);
-      }
+  // Запуск сценария ТОЛЬКО при нажатии на магическую 3D-кнопку или экран
+  const handleStart = (e?: React.SyntheticEvent | Event) => {
+    if (e && typeof e.stopPropagation === 'function') {
+      e.stopPropagation();
     }
 
-    // 3. Воспроизвести пустой звук для «активации» контекста
-    if (soundManager.ctx) {
-      try {
-        const buffer = soundManager.ctx.createBuffer(1, 1, 22050);
-        const source = soundManager.ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(soundManager.ctx.destination);
-        source.start(0);
-      } catch (e) {
-        console.warn('Silent buffer activation failed:', e);
-      }
-    }
+    // 1. Сначала fullscreen — СИНХРОННО, при первом касании / клике
+    requestFullscreen();
 
-    // 4. Запустить звуки и фоновую музыку
+    if (hasTriggeredRef.current || phase !== 'idle') return;
+    hasTriggeredRef.current = true;
+
+    // 2. Разблокировать AudioContext и запустить звуки
+    soundManager.initCtx();
     soundManager.playClick();
     soundManager.playCelebration();
     soundManager.playMusic('loading_loop');
     setPhase('press');
 
-    // 2. Взрыв (0.14–0.55 сек): Вспышка звезды и выплеск краски
+    // 3. Взрыв (0.14–0.55 сек): Вспышка звезды и выплеск краски
     setTimeout(() => {
       setShowFlash(true);
       setPhase('burst');
     }, 140);
 
-    // 3. Плавный переход в приложение (0.55–0.9 сек)
+    // 4. Плавный переход в приложение (0.55–0.9 сек)
     setTimeout(() => {
       setPhase('transition');
     }, 550);
 
-    // 4. Завершение оверлея и переход к заставке SplashScreen (/splash)
+    // 5. Завершение оверлея и переход к заставке SplashScreen (/splash)
     setTimeout(() => {
       if (onStart) onStart();
       navigate('/splash', { replace: true });
@@ -126,7 +85,9 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
         initial={{ opacity: 1 }}
         animate={{ opacity: phase === 'transition' ? 0 : 1 }}
         transition={{ duration: 0.35, ease: 'easeOut' }}
-        className="fixed inset-0 z-[100] flex flex-col items-center justify-center select-none overflow-hidden p-4 sm:p-6 cursor-default"
+        onClick={handleStart}
+        onPointerUp={handleStart}
+        className="fixed inset-0 z-[100] flex flex-col items-center justify-center select-none overflow-hidden p-4 sm:p-6 cursor-pointer"
         style={{
           // Чистый пастельный фон как на референсе
           background: 'linear-gradient(145deg, #EEF2FF 0%, #F5F3FF 45%, #FDF2F8 100%)',
@@ -178,6 +139,7 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
         <motion.div
           className="absolute bottom-4 mb-4 pb-[env(safe-area-inset-bottom)] z-20 flex flex-col items-center pointer-events-auto max-w-[90vw] cursor-pointer"
           onClick={handleStart}
+          onPointerUp={handleStart}
           animate={{
             opacity: phase === 'idle' ? 1 : 0,
             y: phase === 'idle' ? 0 : 15,
