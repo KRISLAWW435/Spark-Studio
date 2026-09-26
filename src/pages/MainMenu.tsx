@@ -405,65 +405,83 @@ export function MainMenu() {
 
       {/* 5. КНОПКИ ВНИЗУ ЭКРАНА (Адаптивные отступы и размеры) */}
       <div className={buttonsConfig.containerClass}>
-        {/* Кнопка 1: «Продолжить» (Без имени и монет, только текст и стрелка) */}
-        {hasSave && (
+        {/* Первый вход: Только кнопка «Создать новую студию» */}
+        {!hasSave ? (
           <motion.button
             whileHover={{ scale: 1.02, filter: 'brightness(1.08)' }}
             whileTap={{ scale: 0.98 }}
-            onClick={handleContinue}
-            className={`${buttonsConfig.buttonWidth} ${buttonsConfig.buttonHeight} px-3 sm:px-5 rounded-full flex items-center justify-between text-white shadow-[0_8px_20px_rgba(168,85,247,0.35)] transition-all cursor-pointer`}
+            onClick={handleNewStudio}
+            className={`${buttonsConfig.buttonWidth} ${buttonsConfig.buttonHeight} px-3 sm:px-5 rounded-full flex items-center justify-center gap-2 text-white shadow-[0_8px_20px_rgba(168,85,247,0.35)] transition-all cursor-pointer`}
             style={{
               background: 'linear-gradient(90deg, #A855F7 0%, #C084FC 50%, #22D3EE 100%)',
             }}
           >
-            <div className="flex items-center gap-1.5">
-              {layout === 'mobile' && (
-                <Play size={buttonsConfig.iconSize} className="text-white fill-white shrink-0" />
+            <Plus size={buttonsConfig.iconSize} className="text-white stroke-[2.5]" />
+            <span className={`${buttonsConfig.buttonFont} tracking-wide`}>
+              Создать новую студию
+            </span>
+          </motion.button>
+        ) : (
+          <>
+            {/* Кнопка 1: «Продолжить» (Без имени и монет, только текст и стрелка) */}
+            <motion.button
+              whileHover={{ scale: 1.02, filter: 'brightness(1.08)' }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleContinue}
+              className={`${buttonsConfig.buttonWidth} ${buttonsConfig.buttonHeight} px-3 sm:px-5 rounded-full flex items-center justify-between text-white shadow-[0_8px_20px_rgba(168,85,247,0.35)] transition-all cursor-pointer`}
+              style={{
+                background: 'linear-gradient(90deg, #A855F7 0%, #C084FC 50%, #22D3EE 100%)',
+              }}
+            >
+              <div className="flex items-center gap-1.5">
+                {layout === 'mobile' && (
+                  <Play size={buttonsConfig.iconSize} className="text-white fill-white shrink-0" />
+                )}
+                <span className={`${buttonsConfig.buttonFont} tracking-wide`}>
+                  Продолжить
+                </span>
+              </div>
+              {layout !== 'mobile' && (
+                <ArrowRight size={buttonsConfig.iconSize} className="text-white shrink-0" />
               )}
-              <span className={`${buttonsConfig.buttonFont} tracking-wide`}>
-                Продолжить
+            </motion.button>
+
+            {/* Кнопка 2: «Новая студия» (Вторичная) */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleNewStudio}
+              className={`${buttonsConfig.buttonWidth} ${buttonsConfig.buttonHeight} rounded-full flex items-center justify-center gap-1.5 sm:gap-2 border-2 border-[#A855F7] text-[#A855F7] bg-white/10 backdrop-blur-xs hover:bg-[#A855F7]/15 transition-colors shadow-sm cursor-pointer`}
+            >
+              <Plus size={buttonsConfig.iconSize} className="text-[#A855F7] stroke-[2.5]" />
+              <span className={buttonsConfig.buttonFont}>
+                Новая студия
               </span>
+            </motion.button>
+
+            {/* Кнопка 3: «Загрузить ключ от студии» (Третичная) */}
+            <div className={`flex flex-col items-center ${buttonsConfig.buttonWidth}`}>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  tryEnterFullscreen();
+                  fileInputRef.current?.click();
+                }}
+                className={`w-full ${buttonsConfig.buttonHeight} rounded-full flex items-center justify-center gap-1.5 sm:gap-2 border border-[#A855F7]/40 text-[#A855F7] bg-white/10 backdrop-blur-xs ${buttonsConfig.keyFont} hover:bg-[#A855F7]/15 transition-colors cursor-pointer`}
+              >
+                <Key size={buttonsConfig.iconSize} className="text-[#A855F7]" />
+                <span>{buttonsConfig.keyButtonLabel}</span>
+              </motion.button>
+              {buttonsConfig.showKeySubtext && (
+                <p className={`${buttonsConfig.subTextFont} ${buttonsConfig.subTextMargin} text-slate-600 font-medium tracking-normal text-center`}>
+                  Продолжить на другом устройстве
+                </p>
+              )}
             </div>
-            {layout !== 'mobile' && (
-              <ArrowRight size={buttonsConfig.iconSize} className="text-white shrink-0" />
-            )}
-          </motion.button>
+          </>
         )}
-
-        {/* Кнопка 2: «Новая студия» (Вторичная) */}
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={handleNewStudio}
-          className={`${buttonsConfig.buttonWidth} ${buttonsConfig.buttonHeight} rounded-full flex items-center justify-center gap-1.5 sm:gap-2 border-2 border-[#A855F7] text-[#A855F7] bg-white/10 backdrop-blur-xs hover:bg-[#A855F7]/15 transition-colors shadow-sm cursor-pointer`}
-        >
-          <Plus size={buttonsConfig.iconSize} className="text-[#A855F7] stroke-[2.5]" />
-          <span className={buttonsConfig.buttonFont}>
-            Новая студия
-          </span>
-        </motion.button>
-
-        {/* Кнопка 3: «Загрузить ключ от студии» (Третичная) */}
-        <div className={`flex flex-col items-center ${buttonsConfig.buttonWidth}`}>
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              tryEnterFullscreen();
-              fileInputRef.current?.click();
-            }}
-            className={`w-full ${buttonsConfig.buttonHeight} rounded-full flex items-center justify-center gap-1.5 sm:gap-2 border border-[#A855F7]/40 text-[#A855F7] bg-white/10 backdrop-blur-xs ${buttonsConfig.keyFont} hover:bg-[#A855F7]/15 transition-colors cursor-pointer`}
-          >
-            <Key size={buttonsConfig.iconSize} className="text-[#A855F7]" />
-            <span>{buttonsConfig.keyButtonLabel}</span>
-          </motion.button>
-          {buttonsConfig.showKeySubtext && (
-            <p className={`${buttonsConfig.subTextFont} ${buttonsConfig.subTextMargin} text-slate-600 font-medium tracking-normal text-center`}>
-              Продолжить на другом устройстве
-            </p>
-          )}
-        </div>
       </div>
 
       {/* МОДАЛКА НАСТРОЕК ЗВУКА */}

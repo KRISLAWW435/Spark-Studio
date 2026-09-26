@@ -14,7 +14,7 @@ export function SplashScreen() {
   const [logoError, setLogoError] = useState(false);
   const hasNavigatedRef = useRef(false);
 
-  // Переход на экран загрузки /loading (никогда не на /menu!)
+  // Переход на экран загрузки /loading
   const proceedToLoading = useCallback(() => {
     if (hasNavigatedRef.current) return;
     hasNavigatedRef.current = true;
@@ -22,17 +22,17 @@ export function SplashScreen() {
 
     setTimeout(() => {
       navigate('/loading', { replace: true });
-    }, 400);
+    }, 350);
   }, [navigate]);
 
   useEffect(() => {
     // Гарантируем запуск фоновой музыки loading_loop
     soundManager.playMusic('loading_loop');
 
-    // 4.5 сек показ + 0.4 сек fade out -> строго на /loading
+    // Автопереход на /loading через 2.8 сек
     const timer = setTimeout(() => {
       proceedToLoading();
-    }, 4500);
+    }, 2800);
 
     return () => {
       clearTimeout(timer);
@@ -45,7 +45,7 @@ export function SplashScreen() {
         key="splash-screen"
         initial={{ opacity: 1 }}
         animate={{ opacity: isExiting ? 0 : 1 }}
-        transition={{ duration: 0.4, ease: 'easeInOut' }}
+        transition={{ duration: 0.35, ease: 'easeInOut' }}
         onClick={proceedToLoading}
         title="Нажмите для перехода к загрузке"
         className="relative w-screen h-screen overflow-hidden flex flex-col items-center justify-center select-none cursor-pointer"

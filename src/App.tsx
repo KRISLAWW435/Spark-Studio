@@ -1,5 +1,4 @@
 // src/App.tsx
-import { useState } from 'react';
 import { HashRouter, Routes, Route, Navigate } from 'react-router';
 import { PlayerProvider } from './context/PlayerContext';
 import { AppLayout } from './components/layout/AppLayout';
@@ -16,49 +15,45 @@ import { SubtitlesBar } from './components/ui/SubtitlesBar';
 import { StartOverlay } from './components/StartOverlay';
 
 export default function App() {
-  // Экран «Магия творчества» показывается каждый раз при входе для разблокировки звука в браузерах
-  const [isStarted, setIsStarted] = useState(false);
-
   return (
     <PlayerProvider>
       <HashRouter>
         <SubtitlesBar />
-        {!isStarted ? (
-          <StartOverlay onStart={() => setIsStarted(true)} />
-        ) : (
-          <Routes>
-            {/* Стартовый экран Splash Screen */}
-            <Route path="/" element={<SplashScreen />} />
-            <Route path="/splash" element={<SplashScreen />} />
+        <Routes>
+          {/* 1. Стартовый экран «Магия творчества» (StartOverlay) */}
+          <Route path="/" element={<StartOverlay />} />
+          <Route path="/start" element={<StartOverlay />} />
 
-            {/* Экран загрузки с анимированной шкалой-краской */}
-            <Route path="/loading" element={<LoadingScreen />} />
+          {/* 2. Заставка Спарк + Логотип (SplashScreen) */}
+          <Route path="/splash" element={<SplashScreen />} />
+          <Route path="/welcome-logo" element={<SplashScreen />} />
 
-            {/* Главное меню игры (Спринт 1) */}
-            <Route path="/menu" element={<MainMenu />} />
+          {/* 3. Экран загрузки с анимированной шкалой-краской */}
+          <Route path="/loading" element={<LoadingScreen />} />
 
-            {/* Заставка «Рождение Спарка» */}
-            <Route path="/intro" element={<SparkBirth />} />
-            <Route path="/intro/slides" element={<Intro />} />
+          {/* 5. Главное меню игры */}
+          <Route path="/menu" element={<MainMenu />} />
 
-            {/* Создание студии (Спринт 3) */}
-            <Route path="/studio" element={<StudioSetup />} />
+          {/* Маршруты создания студии и обучения */}
+          <Route path="/intro" element={<SparkBirth />} />
+          <Route path="/intro/slides" element={<Intro />} />
+          <Route path="/studio" element={<StudioSetup />} />
+          <Route path="/studios" element={<WorldMap />} />
 
-            {/* Практика: Интерактив кнопки */}
-            <Route path="/practice" element={<Practice />} />
+          {/* Практика: Интерактив кнопки */}
+          <Route path="/practice" element={<Practice />} />
 
-            {/* Финальный экран с получением ключа .spark */}
-            <Route path="/final" element={<Final />} />
+          {/* Финальный экран с получением ключа .spark */}
+          <Route path="/final" element={<Final />} />
 
-            {/* Основной игровой лейаут: Карта мира Архипелаг UX */}
-            <Route element={<AppLayout />}>
-              <Route path="/map" element={<WorldMap />} />
-            </Route>
+          {/* Основной игровой лейаут: Карта мира Архипелаг UX */}
+          <Route element={<AppLayout />}>
+            <Route path="/map" element={<WorldMap />} />
+          </Route>
 
-            {/* Fallback на главный экран */}
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        )}
+          {/* Fallback на начальный экран */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </HashRouter>
     </PlayerProvider>
   );

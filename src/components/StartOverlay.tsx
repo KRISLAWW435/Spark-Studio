@@ -1,5 +1,6 @@
 // src/components/StartOverlay.tsx
 import React, { useState, useCallback } from 'react';
+import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundManager } from '../utils/soundManager';
 import {
@@ -10,10 +11,11 @@ import {
 import { useResponsiveLayout } from '../hooks/useResponsiveLayout';
 
 interface StartOverlayProps {
-  onStart: () => void;
+  onStart?: () => void;
 }
 
 export function StartOverlay({ onStart }: StartOverlayProps) {
+  const navigate = useNavigate();
   // Фазы: 'idle' -> 'press' -> 'burst' -> 'transition'
   const [phase, setPhase] = useState<'idle' | 'press' | 'burst' | 'transition'>('idle');
   const [isHovered, setIsHovered] = useState(false);
@@ -83,9 +85,10 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
       setPhase('transition');
     }, 550);
 
-    // 4. Завершение оверлея и переход к SplashScreen
+    // 4. Завершение оверлея и переход к заставке SplashScreen (/splash)
     setTimeout(() => {
-      onStart();
+      if (onStart) onStart();
+      navigate('/splash', { replace: true });
     }, 900);
   };
 
@@ -122,47 +125,46 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
           {/* Область шара с парящими искрами и рукой */}
           <div className="relative flex items-center justify-center w-[160px] h-[160px] md:w-[320px] md:h-[320px]">
             {/* 1. Парящие золотые звезды, мазки краски и бусины вокруг шара */}
-            {phase === 'idle' && (
-              <IdleParticles buttonRadius={buttonSize / 2} isHovered={isHovered} />
-            )}
+            <IdleParticles
+              buttonRadius={buttonSize / 2}
+              isHovered={isHovered}
+            />
 
-            {/* 2. Мощный выплеск щупалец краски и звездный взрыв при клике */}
-            <ParticleBurst active={phase === 'burst'} />
+            {/* 2. 3D Сфера-кнопка (Магия Творчества) */}
+            <MagicButton
+              size={buttonSize}
+              phase={phase}
+              isHovered={isHovered}
+              onHoverStart={handleHoverStart}
+              onHoverEnd={handleHoverEnd}
+              onClick={handleStart}
+            />
 
-            {/* 3. Магический 3D шар с краской — ЕДИНСТВЕННЫЙ интерактивный элемент для клика */}
-            {(phase === 'idle' || phase === 'press' || phase === 'burst') && (
-              <MagicButton
-                phase={phase}
-                isHovered={isHovered}
-                onHoverStart={handleHoverStart}
-                onHoverEnd={handleHoverEnd}
-                onClick={handleStart}
-                size={buttonSize}
-                sparklesSize={sparklesSize}
-              />
-            )}
+            {/* 3. Эффект взрыва красок и вспышки звезд */}
+            <ParticleBurst
+              active={phase === 'burst' || phase === 'transition'}
+            />
           </div>
-
-          {/* ================= БЕЛАЯ ПЛАШКА ПОД КНОПКОЙ (слой z-20 поверх частиц) ================= */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{
-              opacity: phase === 'idle' ? 1 : 0,
-              y: phase === 'idle' ? 0 : 15,
-            }}
-            transition={{ duration: 0.25, ease: 'easeOut' }}
-            className="relative z-20 mt-4 md:mt-12 pointer-events-none select-none max-w-[260px] md:max-w-md w-full mx-auto"
-          >
-            <div className="px-4 py-3 md:px-8 md:py-6 rounded-2xl md:rounded-3xl bg-white/95 backdrop-blur-md border border-white/80 shadow-[0_10px_30px_rgba(67,56,202,0.12)] text-center">
-              <h1 className="text-lg md:text-3xl font-black text-slate-800 tracking-tight whitespace-nowrap">
-                Нажми, чтобы начать
-              </h1>
-              <p className="text-xs md:text-base text-slate-500 font-medium mt-0.5 md:mt-1 whitespace-nowrap">
-                Магия творчества
-              </p>
-            </div>
-          </motion.div>
         </div>
+
+        {/* ================= БЕЛАЯ ПЛАШКА С ТЕКСТОМ ================= */}
+        <motion.div
+          className="absolute bottom-4 mb-4 pb-[env(safe-area-inset-bottom)] z-20 flex flex-col items-center pointer-events-auto max-w-[90vw]"
+          animate={{
+            opacity: phase === 'idle' ? 1 : 0,
+            y: phase === 'idle' ? 0 : 15,
+          }}
+          transition={{ duration: 0.25 }}
+        >
+          <div className="bg-white/95 backdrop-blur-md px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-2xl md:rounded-3xl shadow-lg border border-white/80 flex flex-col items-center text-center">
+            <h2 className="text-base sm:text-xl md:text-2xl font-extrabold text-[#17345F] tracking-tight leading-tight">
+              Нажми, чтобы начать
+            </h2>
+            <p className="text-xs sm:text-sm md:text-base text-slate-500 font-medium mt-0.5 sm:mt-1">
+              Магия творчества
+            </p>
+          </div>
+        </motion.div>
       </motion.div>
     </AnimatePresence>
   );

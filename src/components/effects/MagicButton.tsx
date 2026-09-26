@@ -23,7 +23,7 @@ export function MagicButton({
 }: MagicButtonProps) {
   return (
     <motion.div
-      className="relative flex items-center justify-center cursor-pointer select-none outline-none z-[15]"
+      className="group relative flex items-center justify-center cursor-pointer select-none outline-none z-[15] rounded-full border-2 sm:border-4 border-cyan-400/90 shadow-[0_0_25px_rgba(34,211,238,0.5)] hover:shadow-[0_0_35px_rgba(34,211,238,0.85)] hover:border-cyan-300 transition-all duration-300"
       style={{
         width: size,
         height: size,
@@ -32,7 +32,7 @@ export function MagicButton({
       animate={
         phase === 'idle'
           ? {
-              scale: isHovered ? 1.05 : [1, 1.025, 1],
+              scale: isHovered ? 1.08 : [1, 1.05, 1],
             }
           : phase === 'press'
           ? { scale: 0.93 }
@@ -42,11 +42,13 @@ export function MagicButton({
         phase === 'idle'
           ? isHovered
             ? { duration: 0.25, ease: 'easeOut' }
-            : { duration: 3.4, repeat: Infinity, ease: 'easeInOut' }
+            : { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }
           : phase === 'press'
           ? { duration: 0.14, ease: 'easeOut' }
           : { duration: 0.35, ease: 'easeOut' }
       }
+      whileHover={{ scale: 1.08 }}
+      whileTap={{ scale: 0.94 }}
       onMouseEnter={onHoverStart}
       onMouseLeave={onHoverEnd}
       onClick={onClick}
