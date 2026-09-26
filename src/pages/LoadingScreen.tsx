@@ -176,26 +176,10 @@ export function LoadingScreen() {
         transition={{ duration: 0.3 }}
       />
 
-      {/* Контент внизу: текст, шкала прогресса, проценты (опущен в зону под столом через absolute bottom-8) */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pb-[env(safe-area-inset-bottom)] z-10 w-full max-w-[90vw] sm:max-w-[450px] lg:max-w-[550px] px-4 flex flex-col items-center gap-1.5 sm:gap-2">
-        {/* Сменяющийся текст над шкалой (#17345F, font-bold) */}
-        <div className="h-6 sm:h-7 flex items-center justify-center text-center">
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={messageIndex}
-              initial={{ opacity: 0, y: 4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -4 }}
-              transition={{ duration: 0.3 }}
-              className="text-[#17345F] text-xs sm:text-sm md:text-base font-bold text-center"
-            >
-              {LOADING_MESSAGES[messageIndex]}
-            </motion.p>
-          </AnimatePresence>
-        </div>
-
-        {/* Светлый прогресс-бар с реальным процентом предзагрузки */}
-        <div className="w-full h-2.5 sm:h-3.5 bg-white/70 backdrop-blur-md border border-white/50 rounded-full overflow-hidden relative shadow-sm p-[1px]">
+      {/* Контент внизу: 1. Полоса загрузки, 2. Текст статуса под ней в плашке */}
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 pb-[env(safe-area-inset-bottom)] z-10 w-full max-w-[90vw] sm:max-w-xs md:max-w-sm px-4 flex flex-col items-center justify-center space-y-4 mx-auto">
+        {/* 1. Полоса загрузки (Progress Bar) */}
+        <div className="w-full h-2.5 sm:h-3 bg-white/70 backdrop-blur-md border border-white/50 rounded-full overflow-hidden relative shadow-sm p-[1px]">
           <motion.div
             className="h-full rounded-full"
             style={{
@@ -206,10 +190,21 @@ export function LoadingScreen() {
           />
         </div>
 
-        {/* Проценты под шкалой (#A855F7, font-semibold) */}
-        <span className="text-[#A855F7] text-xs sm:text-sm font-semibold tracking-wider">
-          {progress}%
-        </span>
+        {/* 2. Текст статуса под полосой загрузки в полупрозрачной плашке */}
+        <div className="bg-white/80 backdrop-blur-sm px-4 py-1.5 rounded-full shadow-sm animate-pulse text-center">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={messageIndex}
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.3 }}
+              className="text-xs sm:text-sm font-medium text-slate-700 text-center"
+            >
+              {LOADING_MESSAGES[messageIndex]}
+            </motion.p>
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
