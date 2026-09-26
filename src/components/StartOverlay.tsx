@@ -39,9 +39,36 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
     setIsHovered(false);
   }, [phase]);
 
+  // Запрос полноэкранного режима при первом клике пользователя
+  const requestFullscreenMode = () => {
+    const elem = document.documentElement as HTMLElement & {
+      mozRequestFullScreen?: () => Promise<void>;
+      webkitRequestFullscreen?: () => Promise<void>;
+      msRequestFullscreen?: () => Promise<void>;
+    };
+
+    if (!document.fullscreenElement) {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen().catch(() => {});
+      } else if (elem.webkitRequestFullscreen) {
+        /* Safari / iOS */
+        elem.webkitRequestFullscreen().catch(() => {});
+      } else if (elem.mozRequestFullScreen) {
+        /* Firefox */
+        elem.mozRequestFullScreen().catch(() => {});
+      } else if (elem.msRequestFullscreen) {
+        /* IE/Edge */
+        elem.msRequestFullscreen().catch(() => {});
+      }
+    }
+  };
+
   // Запуск сценария ТОЛЬКО при нажатии на магическую 3D-кнопку
   const handleStart = async () => {
     if (phase !== 'idle') return;
+
+    // Вход в Fullscreen API по первому взаимодействию
+    requestFullscreenMode();
 
     // 1. Разблокировать AudioContext
     await soundManager.initCtx();
@@ -149,14 +176,15 @@ export function StartOverlay({ onStart }: StartOverlayProps) {
 
         {/* ================= БЕЛАЯ ПЛАШКА С ТЕКСТОМ ================= */}
         <motion.div
-          className="absolute bottom-4 mb-4 pb-[env(safe-area-inset-bottom)] z-20 flex flex-col items-center pointer-events-auto max-w-[90vw]"
+          className="absolute bottom-4 mb-4 pb-[env(safe-area-inset-bottom)] z-20 flex flex-col items-center pointer-events-auto max-w-[90vw] cursor-pointer"
+          onClick={handleStart}
           animate={{
             opacity: phase === 'idle' ? 1 : 0,
             y: phase === 'idle' ? 0 : 15,
           }}
           transition={{ duration: 0.25 }}
         >
-          <div className="bg-white/95 backdrop-blur-md px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-2xl md:rounded-3xl shadow-lg border border-white/80 flex flex-col items-center text-center">
+          <div className="bg-white/95 backdrop-blur-md px-5 py-2.5 sm:px-8 sm:py-3.5 rounded-2xl md:rounded-3xl shadow-lg border border-white/80 flex flex-col items-center text-center active:scale-95 transition-transform">
             <h2 className="text-base sm:text-xl md:text-2xl font-extrabold text-[#17345F] tracking-tight leading-tight">
               Нажми, чтобы начать
             </h2>
