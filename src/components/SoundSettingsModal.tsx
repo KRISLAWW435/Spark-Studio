@@ -44,6 +44,22 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
   const [isMusicMuted, setIsMusicMuted] = useState<boolean>(() => getStoredSoundSettings().isMusicMuted);
   const [isVoiceMuted, setIsVoiceMuted] = useState<boolean>(() => getStoredSoundSettings().isVoiceMuted);
 
+  // Кнопка «Готово» показывается только на больших экранах (≥1024×700) и не на мобилке
+  const [showDoneButton, setShowDoneButton] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.innerWidth >= 1024 && window.innerHeight >= 700 && !isMobile;
+  });
+
+  useEffect(() => {
+    const checkSize = () => {
+      const isBigEnough = window.innerWidth >= 1024 && window.innerHeight >= 700;
+      setShowDoneButton(isBigEnough && !isMobile);
+    };
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, [isMobile]);
+
   // При открытии модалки загружаем актуальные настройки
   useEffect(() => {
     if (isOpen) {
@@ -58,14 +74,14 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
 
   if (!isOpen) return null;
 
-  // Автосохранение на мобилке при любом изменении
-  const autoSaveIfMobile = (
+  // Автосохранение при скрытой кнопке «Готово» (на мобилке или маленьких экранах)
+  const autoSaveIfNeeded = (
     music: number,
     voice: number,
     musicMuted: boolean,
     voiceMuted: boolean
   ) => {
-    if (isMobile) {
+    if (!showDoneButton) {
       const updated: SoundSettings = {
         musicVolume: music,
         voiceVolume: voice,
@@ -91,7 +107,7 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
       SoundManager.setMusicMuted(false);
     }
     SoundManager.setMusicVolume(clamped / 100);
-    autoSaveIfMobile(clamped, voiceVolume, unmuted, isVoiceMuted);
+    autoSaveIfNeeded(clamped, voiceVolume, unmuted, isVoiceMuted);
   };
 
   // Переключение Mute музыки
@@ -100,7 +116,7 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
     const next = !isMusicMuted;
     setIsMusicMuted(next);
     SoundManager.setMusicMuted(next);
-    autoSaveIfMobile(musicVolume, voiceVolume, next, isVoiceMuted);
+    autoSaveIfNeeded(musicVolume, voiceVolume, next, isVoiceMuted);
   };
 
   // Изменение громкости голоса в реальном времени
@@ -113,7 +129,7 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
       SoundManager.setVoiceMuted(false);
     }
     SoundManager.setVoiceVolume(clamped / 100);
-    autoSaveIfMobile(musicVolume, clamped, isMusicMuted, unmuted);
+    autoSaveIfNeeded(musicVolume, clamped, isMusicMuted, unmuted);
   };
 
   // Переключение Mute голоса
@@ -122,7 +138,7 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
     const next = !isVoiceMuted;
     setIsVoiceMuted(next);
     SoundManager.setVoiceMuted(next);
-    autoSaveIfMobile(musicVolume, voiceVolume, isMusicMuted, next);
+    autoSaveIfNeeded(musicVolume, voiceVolume, isMusicMuted, next);
   };
 
   // Сохранение настроек при нажатии кнопки «Готово» (Desktop)
@@ -147,8 +163,8 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
   // Закрытие крестиком или кликом на фон
   const handleClose = () => {
     SoundManager.playClick();
-    // На мобилке автосохранение уже выполнено; на десктопе отменяем изменения до нажатия «Готово»
-    if (!isMobile && initialSettingsRef.current) {
+    // Если кнопка «Готово» отображается — отменяем несохраненные изменения до нажатия «Готово». Если скрыта — изменения уже сохранены.
+    if (showDoneButton && initialSettingsRef.current) {
       applySoundSettings(initialSettingsRef.current);
     }
     onClose();
@@ -430,8 +446,8 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
             </button>
           </div>
 
-          {/* 6. Кнопка «Готово» — ТОЛЬКО для десктопа */}
-          {!isMobile && (
+          {/* 6. Кнопка «Готово» — ТОЛЬКО если экран ≥1024×700 и не mobile */}
+          {showDoneButton && (
             <div className="mt-auto flex justify-center">
               <button
                 type="button"
