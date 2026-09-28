@@ -20,7 +20,7 @@ import { usePlayer } from '../context/PlayerContext';
 import { sound, soundManager } from '../utils/soundManager';
 import { SPARK_MENU_PHRASES } from '../data/sparkMenuPhrases';
 import { sparkVoice } from '../utils/sparkVoicePlayer';
-import { SettingsModal } from '../components/SettingsModal';
+import { SoundSettingsModal } from '../components/SoundSettingsModal';
 import { useResponsiveLayout, useIsPortrait } from '../hooks/useResponsiveLayout';
 import { SparkBubble } from '../components/SparkBubble';
 import {
@@ -124,7 +124,10 @@ export function MainMenu() {
   // 4. Слушатель изменения громкости / mute из настроек
   useEffect(() => {
     const handleVoiceMuteChange = () => {
-      setIsMuted(soundManager.isVoiceMuted());
+      // Откладываем обновление через queueMicrotask, чтобы исключить setState во время фазы рендера других компонентов
+      queueMicrotask(() => {
+        setIsMuted(soundManager.isVoiceMuted());
+      });
     };
 
     window.addEventListener('voice-muted-change', handleVoiceMuteChange);
@@ -307,8 +310,8 @@ export function MainMenu() {
         </div>
       )}
 
-      {/* 2. Лого — по центру сверху (увеличен на десктопе) */}
-      <div className="absolute top-3 sm:top-5 md:top-6 left-1/2 -translate-x-1/2 z-30">
+      {/* 2. Лого — по центру сверху (увеличен на десктопе, z-10 за баблом) */}
+      <div className="absolute top-3 sm:top-5 md:top-6 left-1/2 -translate-x-1/2 z-10">
         <img
           src="/assets/logo.png"
           alt="Spark Studio"
@@ -561,8 +564,10 @@ export function MainMenu() {
         )}
       </div>
 
-      {/* Модалка настроек */}
-      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      {/* Модалка настроек звука */}
+      {isSettingsOpen && (
+        <SoundSettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      )}
     </div>
   );
 }

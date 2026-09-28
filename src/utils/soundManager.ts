@@ -10,10 +10,10 @@ class SoundManager {
     // Инициализация дефолтных значений в localStorage при первом запуске
     if (typeof window !== 'undefined') {
       if (localStorage.getItem('music_volume') === null) {
-        localStorage.setItem('music_volume', '0.5');
+        localStorage.setItem('music_volume', '0.40');
       }
       if (localStorage.getItem('voice_volume') === null) {
-        localStorage.setItem('voice_volume', '1.0');
+        localStorage.setItem('voice_volume', '0.65');
       }
       if (localStorage.getItem('music_muted') === null) {
         localStorage.setItem('music_muted', 'false');
@@ -174,9 +174,9 @@ class SoundManager {
   // --- УПРАВЛЕНИЕ ГРОМКОСТЬЮ И MUTE ---
 
   getMusicVolume(): number {
-    if (typeof window === 'undefined') return 0.5;
+    if (typeof window === 'undefined') return 0.40;
     const v = localStorage.getItem('music_volume');
-    return v !== null ? parseFloat(v) : 0.5;
+    return v !== null ? parseFloat(v) : 0.40;
   }
 
   setMusicVolume(v: number) {
@@ -191,9 +191,9 @@ class SoundManager {
   }
 
   getVoiceVolume(): number {
-    if (typeof window === 'undefined') return 1.0;
+    if (typeof window === 'undefined') return 0.65;
     const v = localStorage.getItem('voice_volume');
-    return v !== null ? parseFloat(v) : 1.0;
+    return v !== null ? parseFloat(v) : 0.65;
   }
 
   setVoiceVolume(v: number) {

@@ -21,21 +21,27 @@ export const GlobalAudioControls: React.FC<GlobalAudioControlsProps> = ({
     const handleSoundToggle = (e: Event) => {
       const custom = e as CustomEvent<{ muted: boolean }>;
       if (typeof custom.detail?.muted === 'boolean') {
-        setIsMuted(custom.detail.muted);
+        queueMicrotask(() => {
+          setIsMuted(custom.detail.muted);
+        });
       }
     };
 
     const handleTtsToggle = (e: Event) => {
       const custom = e as CustomEvent<{ enabled: boolean }>;
       if (typeof custom.detail?.enabled === 'boolean') {
-        setIsTtsEnabled(custom.detail.enabled);
+        queueMicrotask(() => {
+          setIsTtsEnabled(custom.detail.enabled);
+        });
       }
     };
 
     const handleSpeedChange = (e: Event) => {
       const custom = e as CustomEvent<{ speed: SpeechSpeed }>;
       if (custom.detail?.speed) {
-        setSpeed(custom.detail.speed);
+        queueMicrotask(() => {
+          setSpeed(custom.detail.speed);
+        });
       }
     };
 
