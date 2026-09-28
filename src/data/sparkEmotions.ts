@@ -1,4 +1,5 @@
 // src/data/sparkEmotions.ts
+import { getAssetUrl } from '../utils/assetUrl';
 
 export type SparkEmotion =
   | 'idle'
@@ -27,6 +28,7 @@ export const SPARK_EMOTION_CONFIG: Record<SparkEmotion, SparkEmotionConfig> = {
   idle: {
     type: 'vector',
     mode: 'full',
+    src: getAssetUrl('assets/characters/spark_idle.webp'),
     label: 'Спокойный',
     description: 'Спарк мягко покачивается и внимательно наблюдает',
     particleEffect: 'sparkles',
@@ -35,6 +37,7 @@ export const SPARK_EMOTION_CONFIG: Record<SparkEmotion, SparkEmotionConfig> = {
   happy: {
     type: 'vector',
     mode: 'full',
+    src: getAssetUrl('assets/characters/spark_happy.webp'),
     label: 'Счастливый',
     description: 'Спарк сияет от радости, глазки-полумесяцы и румянец',
     particleEffect: 'sparkles',
@@ -43,6 +46,7 @@ export const SPARK_EMOTION_CONFIG: Record<SparkEmotion, SparkEmotionConfig> = {
   thinking: {
     type: 'vector',
     mode: 'full',
+    src: getAssetUrl('assets/characters/spark_thinking.webp'),
     label: 'Задумчивый',
     description: 'Спарк размышляет над задачей и прикидывает варианты',
     particleEffect: 'question',

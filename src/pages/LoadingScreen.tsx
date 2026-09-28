@@ -3,6 +3,8 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundManager } from '../utils/soundManager';
+import { getAssetUrl } from '../utils/assetUrl';
+import { getAudioUrl } from '../utils/audioUrl';
 
 const LOADING_BG = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/backgrounds/Loading%20Screen.webp';
 
@@ -20,30 +22,34 @@ const LOADING_MESSAGES = [
 // Критичные ассеты для реальной предзагрузки в память браузера
 const ASSETS_TO_PRELOAD = [
   // Фоны
-  `${import.meta.env.BASE_URL}assets/backgrounds/menu-bg-clean.webp`,
+  getAssetUrl('assets/backgrounds/menu-bg-clean.webp'),
   'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/backgrounds/Loading%20Screen.webp',
   // Логотип
+  getAssetUrl('assets/logo-converted.webp'),
+  getAssetUrl('assets/logo.png'),
   'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/logo/logo-converted.webp',
-  `${import.meta.env.BASE_URL}assets/logo/logo-converted.webp`,
   // Спарк (эмоции и состояния)
-  `${import.meta.env.BASE_URL}assets/spark/spark_idle.webp`,
-  `${import.meta.env.BASE_URL}assets/spark/spark_happy.webp`,
-  `${import.meta.env.BASE_URL}assets/spark/spark_thinking.webp`,
+  getAssetUrl('assets/characters/spark_idle.webp'),
+  getAssetUrl('assets/characters/spark_happy.webp'),
+  getAssetUrl('assets/characters/spark_thinking.webp'),
+  // Модалка звука
+  getAssetUrl('assets/ui/sound-modal-desktop.webp'),
+  getAssetUrl('assets/ui/sound-modal-mobile.webp'),
   // Музыка главного меню
-  `${import.meta.env.BASE_URL}audio/music/menu_bg.mp3`,
+  getAudioUrl('audio/music/menu_bg.mp3'),
   // Голосовые реплики Спарка для главного меню (12 треков)
-  `${import.meta.env.BASE_URL}audio/spark/menu_01.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_02.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_03.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_04.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_05.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_06.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_07.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_08.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_09.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_10.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_11.mp3`,
-  `${import.meta.env.BASE_URL}audio/spark/menu_12.mp3`,
+  getAudioUrl('audio/spark/menu_01.mp3'),
+  getAudioUrl('audio/spark/menu_02.mp3'),
+  getAudioUrl('audio/spark/menu_03.mp3'),
+  getAudioUrl('audio/spark/menu_04.mp3'),
+  getAudioUrl('audio/spark/menu_05.mp3'),
+  getAudioUrl('audio/spark/menu_06.mp3'),
+  getAudioUrl('audio/spark/menu_07.mp3'),
+  getAudioUrl('audio/spark/menu_08.mp3'),
+  getAudioUrl('audio/spark/menu_09.mp3'),
+  getAudioUrl('audio/spark/menu_10.mp3'),
+  getAudioUrl('audio/spark/menu_11.mp3'),
+  getAudioUrl('audio/spark/menu_12.mp3'),
 ];
 
 export function LoadingScreen() {

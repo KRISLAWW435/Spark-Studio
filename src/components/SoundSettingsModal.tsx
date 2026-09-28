@@ -18,6 +18,7 @@ import {
   CURRENT_SETTINGS_VERSION,
   SoundSettings,
 } from '../hooks/useSoundSettings';
+import { getAssetUrl } from '../utils/assetUrl';
 
 export interface SoundSettingsModalProps {
   isOpen: boolean;
@@ -32,8 +33,8 @@ export function SoundSettingsModal({ isOpen, onClose }: SoundSettingsModalProps)
     (typeof window !== 'undefined' && (window.innerWidth < 768 || (window.innerHeight < 500 && window.innerWidth < 1024)));
 
   const bgImage = isMobile
-    ? '/assets/ui/sound-modal-mobile.webp'
-    : '/assets/ui/sound-modal-desktop.webp';
+    ? getAssetUrl('assets/ui/sound-modal-mobile.webp')
+    : getAssetUrl('assets/ui/sound-modal-desktop.webp');
 
   // Храним исходные настройки при открытии для отмены при закрытии крестиком на Desktop
   const initialSettingsRef = useRef<SoundSettings | null>(null);

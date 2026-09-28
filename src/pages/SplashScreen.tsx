@@ -4,9 +4,12 @@ import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import { soundManager } from '../utils/soundManager';
 import { requestFullscreen } from '../utils/fullscreen';
+import { getAssetUrl } from '../utils/assetUrl';
 
-const SPARK_URL = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/spark/spark_splash.webp';
-const LOGO_URL = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/logo/logo-converted.webp';
+const SPARK_LOCAL = getAssetUrl('assets/characters/spark_idle.webp');
+const SPARK_CDN = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/spark/spark_splash.webp';
+const LOGO_LOCAL = getAssetUrl('assets/logo-converted.webp');
+const LOGO_CDN = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/logo/logo-converted.webp';
 
 export function SplashScreen() {
   const navigate = useNavigate();
@@ -112,9 +115,15 @@ export function SplashScreen() {
           {/* Персонаж */}
           {!sparkError ? (
             <motion.img
-              src={SPARK_URL}
+              src={SPARK_LOCAL}
               alt="Spark"
-              onError={() => setSparkError(true)}
+              onError={(e) => {
+                if ((e.target as HTMLImageElement).src !== SPARK_CDN) {
+                  (e.target as HTMLImageElement).src = SPARK_CDN;
+                } else {
+                  setSparkError(true);
+                }
+              }}
               animate={{ y: [0, -6, 0] }}
               transition={{
                 duration: 2.5,
@@ -143,9 +152,15 @@ export function SplashScreen() {
           >
             {!logoError ? (
               <img
-                src={LOGO_URL}
+                src={LOGO_LOCAL}
                 alt="Spark Studio"
-                onError={() => setLogoError(true)}
+                onError={(e) => {
+                  if ((e.target as HTMLImageElement).src !== LOGO_CDN) {
+                    (e.target as HTMLImageElement).src = LOGO_CDN;
+                  } else {
+                    setLogoError(true);
+                  }
+                }}
                 className="w-[280px] md:w-[380px] xl:w-[480px] max-w-[75vw] h-auto object-contain drop-shadow-xs"
               />
             ) : (

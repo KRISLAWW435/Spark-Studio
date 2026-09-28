@@ -28,8 +28,9 @@ import {
   requestFullscreen,
   toggleFullscreen as toggleFullscreenUtil,
 } from '../utils/fullscreen';
+import { getAssetUrl } from '../utils/assetUrl';
 
-const MENU_BG = `${import.meta.env.BASE_URL}assets/backgrounds/menu-bg-clean.webp`;
+const MENU_BG = getAssetUrl('assets/backgrounds/menu-bg-clean.webp');
 const LOGO_URL = 'https://cdn.jsdelivr.net/gh/KRISLAWW435/Spark-assets@main/assets/logo/logo-converted.webp';
 
 export function MainMenu() {
@@ -313,7 +314,7 @@ export function MainMenu() {
       {/* 2. Лого — по центру сверху (увеличен на десктопе, z-10 за баблом) */}
       <div className="absolute top-3 sm:top-5 md:top-6 left-1/2 -translate-x-1/2 z-10">
         <img
-          src="/assets/logo.png"
+          src={getAssetUrl('assets/logo-converted.webp')}
           alt="Spark Studio"
           onError={(e) => {
             (e.target as HTMLImageElement).src = LOGO_URL;
